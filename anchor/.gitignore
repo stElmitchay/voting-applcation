@@ -1,0 +1,17 @@
+.anchor
+.DS_Store
+target/debug
+target/deploy
+target/release
+target/sbf-solana-solana
+target/test-ledger
+target/.rustc_info.json
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+
+# Add any additional large files or directories
+# Example: Ignoring large database files
+test-ledger/rocksdb/*
+test-ledger/snapshot/*
