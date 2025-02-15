@@ -6,6 +6,7 @@ import {startAnchor} from "solana-bankrun";
 import {BankrunProvider} from "anchor-bankrun";
 import { publicKey } from '@coral-xyz/anchor/dist/cjs/utils';
 import { initialize } from 'next/dist/server/lib/render-server';
+import { Z_ASCII } from 'zlib';
 
 const IDL = require ('../target/idl/votingapplication.json');
 
@@ -61,9 +62,26 @@ describe('votingapplication', () =>{
       new anchor.BN(1),
     ).rpc();
     await VotingapplicationProgram.methods.initializeCandidate(
-      "name",
+      "Name2",
       new anchor.BN(1),
     ).rpc();
+
+    const [NameAddress] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer,'le',8), Buffer.from("Name")],
+      votingAddress,
+    );
+    const nameCandidate = await VotingapplicationProgram.account.candidate.fetch(NameAddress);
+    console.log(nameCandidate);
+    expect(nameCandidate.candidateVotes.toNumber()).toEqual(0)
+
+    const [Name2Address] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer,'le',8), Buffer.from("Name2")],
+      votingAddress,
+    );
+    const name2Candidate = await VotingapplicationProgram.account.candidate.fetch(Name2Address);
+    console.log(name2Candidate)
+    expect(name2Candidate.candidateVotes.toNumber()).toEqual(0)
+    
   })
 
   it ("vote", async() =>{
