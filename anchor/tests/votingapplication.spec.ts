@@ -56,7 +56,14 @@ describe('votingapplication', () =>{
   });
 
   it("initialize candidate", async () => {
-
+    await VotingapplicationProgram.methods.initializeCandidate(
+      "Name",
+      new anchor.BN(1),
+    ).rpc();
+    await VotingapplicationProgram.methods.initializeCandidate(
+      "name",
+      new anchor.BN(1),
+    ).rpc();
   })
 
   it ("vote", async() =>{
