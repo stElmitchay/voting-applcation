@@ -11,7 +11,7 @@ node_modules
 test-ledger
 .yarn
 
-# Add any additional large files or directories
-# Example: Ignoring large database files
+
+
 test-ledger/rocksdb/*
 test-ledger/snapshot/*

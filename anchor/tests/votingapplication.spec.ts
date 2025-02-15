@@ -5,6 +5,7 @@ import { Votingapplication } from '../target/types/votingapplication';
 import {startAnchor} from "solana-bankrun";
 import {BankrunProvider} from "anchor-bankrun";
 import { publicKey } from '@coral-xyz/anchor/dist/cjs/utils';
+import { initialize } from 'next/dist/server/lib/render-server';
 
 const IDL = require ('../target/idl/votingapplication.json');
 
@@ -14,18 +15,25 @@ process.removeAllListeners('warning');
 const votingAddress = new PublicKey("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF")
 describe('votingapplication', () =>{
 
-  it('Intialize Poll', async () => {
-    const context = await startAnchor("", [{
+  let context;
+  let provider;
+  let VotingapplicationProgram: Program<Votingapplication>;
+
+  beforeAll(async () =>{
+    context = await startAnchor("", [{
       name: "votingapplication",
       programId: votingAddress
     }], []);
-    const provider = new BankrunProvider(context);
+    
+     provider = new BankrunProvider(context);
 
-    const VotingapplicationProgram = new Program<Votingapplication>(
+    VotingapplicationProgram = new Program<Votingapplication>(
       IDL,
       provider,
     );
-
+  })
+  it('Intialize Poll', async () => {
+      
     await VotingapplicationProgram.methods.initialzePoll(
       new anchor.BN(1),
       "Who is your GOAT?",
@@ -46,4 +54,13 @@ describe('votingapplication', () =>{
     expect(poll.pollStart.toNumber()).toBeLessThan(poll.pollEnd.toNumber());
 
   });
+
+  it("initialize candidate", async () => {
+
+  })
+
+  it ("vote", async() =>{
+
+  })
+  
 });
