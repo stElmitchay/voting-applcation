@@ -27,6 +27,7 @@
         },
         {
           "name": "poll",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -121,6 +122,62 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "vote",
+      "discriminator": [
+        227,
+        110,
+        155,
+        23,
+        136,
+        126,
+        172,
+        25
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "poll",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "poll_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "candidate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "poll_id"
+              },
+              {
+                "kind": "arg",
+                "path": "candidate_name"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "_candidate_name",
+          "type": "string"
+        },
+        {
+          "name": "_poll_id",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -190,7 +247,7 @@
             "type": "u64"
           },
           {
-            "name": "candidate_name",
+            "name": "candidate_amount",
             "type": "u64"
           }
         ]

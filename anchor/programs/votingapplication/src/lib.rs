@@ -22,7 +22,7 @@ pub mod votingapplication {
       poll.description = description;
       poll.poll_start = poll_start;
       poll.poll_end = poll_end;
-      poll.candidate_name = 0;
+      poll.candidate_amount = 0;
         Ok(())
     }
 
@@ -33,13 +33,45 @@ pub mod votingapplication {
 
 
     let candidate = &mut ctx.accounts.candidate;
+    let poll = &mut ctx.accounts.poll;
+    poll.candidate_amount += 1;
     candidate.candidate_name = candidate_name;
     candidate.candidate_votes = 0;
 
 
    Ok(())
   }
+
+  pub fn vote(ctx: Context<Vote>, _candidate_name: String, _poll_id:u64) -> Result<()> {
+    let candidate = &mut ctx.accounts.candidate;
+    candidate.candidate_votes += 1;
+    msg!("voted for {}", candidate.candidate_name);
+    msg!("votes {}", candidate.candidate_votes);
+    Ok(()) 
+  }
 }
+
+#[derive(Accounts)]
+#[instruction(candidate_name: String, poll_id:u64)]
+pub struct Vote <'info>{
+  
+  pub signer: Signer<'info>,
+
+  #[account(
+    seeds = [poll_id.to_le_bytes().as_ref()],
+    bump
+  )]
+
+  pub poll: Account<'info, Poll>,
+
+  #[account(
+    mut,
+    seeds = [poll_id.to_le_bytes().as_ref(), candidate_name.as_bytes()],
+    bump
+  )]
+  pub candidate: Account<'info, Candidate>,
+ }
+
 
 #[derive(Accounts)]
 #[instruction(candidate_name:String, poll_id:u64)] //the order matters
@@ -49,6 +81,7 @@ pub struct  InitializeCandidate<'info>{
   pub signer: Signer<'info>,
 
   #[account(
+    mut,
     seeds = [poll_id.to_le_bytes().as_ref()],
     bump
   )]
@@ -72,11 +105,6 @@ pub poll: Account<'info, Poll>,
     pub candidate_name: String,
     pub candidate_votes: u64,
   }
-
-
-
-
-
 
 //defines the accounts needed for the InitializePoll instruction
 #[derive(Accounts)]
@@ -111,5 +139,5 @@ pub struct Poll{
   pub description: String,
   pub poll_start:u64,
   pub poll_end:u64,
-  pub candidate_name: u64,
+  pub candidate_amount: u64,
 }

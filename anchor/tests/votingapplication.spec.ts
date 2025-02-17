@@ -86,6 +86,20 @@ describe('votingapplication', () =>{
 
   it ("vote", async() =>{
 
+    await VotingapplicationProgram.methods
+      .vote(
+        "Name",
+        new anchor.BN(1)
+      ).rpc()
+
+      const [NameAddress] = PublicKey.findProgramAddressSync(
+        [new anchor.BN(1).toArrayLike(Buffer,'le',8), Buffer.from("Name")],
+        votingAddress,
+      );
+      const nameCandidate = await VotingapplicationProgram.account.candidate.fetch(NameAddress);
+      console.log(nameCandidate);
+      expect(nameCandidate.candidateVotes.toNumber()).toEqual(1)
+
   })
   
 });
