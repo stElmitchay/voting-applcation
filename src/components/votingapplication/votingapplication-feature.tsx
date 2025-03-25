@@ -6,10 +6,14 @@ import { AppHero, ellipsify } from '../ui/ui-layout'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { useVotingapplicationProgram } from './votingapplication-data-access'
 import { VotingapplicationCreate, VotingapplicationList } from './votingapplication-ui'
+import { useState, useEffect } from 'react'
 
 export default function VotingapplicationFeature() {
   const { publicKey } = useWallet()
   const { programId } = useVotingapplicationProgram()
+  const [isLoading, setIsLoading] = useState(true)
+
+
 
   return publicKey ? (
     <div>

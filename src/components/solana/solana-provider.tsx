@@ -13,12 +13,17 @@ import {
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { ReactNode, useCallback, useMemo } from 'react'
 import { useCluster } from '../cluster/cluster-data-access'
+import { CustomWalletButton } from './wallet-button'
 
 require('@solana/wallet-adapter-react-ui/styles.css')
 
-export const WalletButton = dynamic(async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton, {
+// Legacy wallet button for backward compatibility
+const LegacyWalletButton = dynamic(async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton, {
   ssr: false,
 })
+
+// Export our custom wallet button instead
+export const WalletButton = CustomWalletButton
 
 export function SolanaProvider({ children }: { children: ReactNode }) {
   const { cluster } = useCluster()

@@ -51,23 +51,50 @@ export function ClusterChecker({ children }: { children: ReactNode }) {
 
 export function ClusterUiSelect() {
   const { clusters, setCluster, cluster } = useCluster()
+  const [showDropdown, setShowDropdown] = useState(false)
+  
   return (
-    <div className="dropdown dropdown-end">
-      <label tabIndex={0} className="btn btn-primary rounded-btn">
-        {cluster.name}
-      </label>
-      <ul tabIndex={0} className="menu dropdown-content z-[1] p-2 shadow bg-base-100 rounded-box w-52 mt-4">
-        {clusters.map((item) => (
-          <li key={item.name}>
+    <div className="relative">
+      <button
+        onClick={() => setShowDropdown(!showDropdown)}
+        className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <span>{cluster.name}</span>
+        <svg
+          className={`ml-1.5 h-4 w-4 text-gray-500 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {showDropdown && (
+        <div 
+          className="absolute right-0 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-10"
+        >
+          {clusters.map((item) => (
             <button
-              className={`btn btn-sm ${item.active ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setCluster(item)}
+              key={item.name}
+              className={`flex w-full items-center px-4 py-2 text-sm ${
+                item.active ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => {
+                setCluster(item)
+                setShowDropdown(false)
+              }}
             >
-              {item.name}
+              {item.active && (
+                <svg className="mr-2 h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              <span className={item.active ? 'ml-2' : ''}>{item.name}</span>
             </button>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
