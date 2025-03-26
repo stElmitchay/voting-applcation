@@ -17,13 +17,6 @@ export function getVotingapplicationProgram(provider: AnchorProvider, address?: 
 
 // This is a helper function to get the program ID for the Votingapplication program depending on the cluster.
 export function getVotingapplicationProgramId(cluster: Cluster) {
-  switch (cluster) {
-    case 'devnet':
-    case 'testnet':
-      // This is the program ID for the Votingapplication program on devnet and testnet.
-      return new PublicKey('5LdBsc82PTAfGCYg7q5z6ANbrjd7CnnVGbfetrEf4GRX')
-    case 'mainnet-beta':
-    default:
-      return VOTINGAPPLICATION_PROGRAM_ID
-  }
+  // Always use the IDL's address as the source of truth
+  return VOTINGAPPLICATION_PROGRAM_ID
 }

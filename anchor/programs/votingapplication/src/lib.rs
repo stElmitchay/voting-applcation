@@ -2,7 +2,7 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("5LdBsc82PTAfGCYg7q5z6ANbrjd7CnnVGbfetrEf4GRX");
+declare_id!("EFhNioWivWWzHP2iv2uV8hAT1DHr8C1PfsZ3C65PKPkh");
 
 // this defines the program's instructions   Instruction to create a new poll
 // - ctx: Contains all account info needed for this instruction
@@ -11,7 +11,7 @@ declare_id!("5LdBsc82PTAfGCYg7q5z6ANbrjd7CnnVGbfetrEf4GRX");
 pub mod votingapplication {
     use super::*;
 
-    pub fn initialze_poll(ctx: Context<InitializePoll>, 
+    pub fn initialize_poll(ctx: Context<InitializePoll>, 
                                poll_id: u64,
                                description:String,
                                poll_start: u64,

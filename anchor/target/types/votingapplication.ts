@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/votingapplication.json`.
  */
 export type Votingapplication = {
-  "address": "5LdBsc82PTAfGCYg7q5z6ANbrjd7CnnVGbfetrEf4GRX",
+  "address": "EFhNioWivWWzHP2iv2uV8hAT1DHr8C1PfsZ3C65PKPkh",
   "metadata": {
     "name": "votingapplication",
     "version": "0.1.0",
@@ -76,16 +76,16 @@ export type Votingapplication = {
       ]
     },
     {
-      "name": "initialzePoll",
+      "name": "initializePoll",
       "discriminator": [
-        145,
-        198,
-        244,
-        53,
-        58,
-        35,
-        59,
-        68
+        193,
+        22,
+        99,
+        197,
+        18,
+        33,
+        115,
+        117
       ],
       "accounts": [
         {

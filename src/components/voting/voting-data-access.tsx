@@ -50,7 +50,7 @@ export function useVotingProgram() {
 
       // @ts-ignore - bypass TypeScript errors for account naming discrepancies
       return (program.methods as any)
-        .initialze_poll(
+        .initializePoll(
           new BN(pollId),
           description,
           new BN(pollStart),
@@ -59,7 +59,7 @@ export function useVotingProgram() {
         .accounts({ 
           signer: provider.publicKey,
           poll: pollPda, 
-          system_program: new PublicKey("11111111111111111111111111111111")
+          systemProgram: new PublicKey("11111111111111111111111111111111")
         })
         .rpc()
     },
@@ -93,7 +93,7 @@ export function useVotingProgram() {
 
       // @ts-ignore - bypass TypeScript errors for account naming discrepancies
       return (program.methods as any)
-        .initialize_candidate(
+        .initializeCandidate(
           candidateName,
           new BN(pollId)
         )
@@ -101,7 +101,7 @@ export function useVotingProgram() {
           signer: provider.publicKey,
           poll: pollPda,
           candidate: candidatePda,
-          system_program: new PublicKey("11111111111111111111111111111111")
+          systemProgram: new PublicKey("11111111111111111111111111111111")
         })
         .rpc()
     },

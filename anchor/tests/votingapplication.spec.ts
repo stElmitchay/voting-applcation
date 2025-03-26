@@ -13,7 +13,7 @@ const IDL = require ('../target/idl/votingapplication.json');
 // @ts-ignore
 process.removeAllListeners('warning');
 
-const votingAddress = new PublicKey("5LdBsc82PTAfGCYg7q5z6ANbrjd7CnnVGbfetrEf4GRX")
+const votingAddress = new PublicKey("EFhNioWivWWzHP2iv2uV8hAT1DHr8C1PfsZ3C65PKPkh")
 describe('votingapplication', () =>{
 
   let context;
