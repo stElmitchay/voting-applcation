@@ -7,6 +7,11 @@ import { WalletButton } from '../solana/solana-provider'
 import { CreatePollForm } from '../voting/voting-ui'
 import { useVotingProgram } from '../voting/voting-data-access'
 import toast from 'react-hot-toast'
+import * as anchor from '@coral-xyz/anchor'
+import { PublicKey } from '@solana/web3.js'
+import { BN } from '@coral-xyz/anchor'
+import { useAnchorProvider } from '../solana/solana-provider'
+import { getVotingapplicationProgramId } from '@project/anchor'
 
 export default function CreatePollFeature() {
   const { publicKey } = useWallet()
@@ -15,8 +20,10 @@ export default function CreatePollFeature() {
   const [pollDetails, setPollDetails] = useState<any>(null)
   const [candidates, setCandidates] = useState<string[]>([])
   const [newCandidate, setNewCandidate] = useState('')
-  const { initializePoll, initializeCandidate } = useVotingProgram()
+  const { program } = useVotingProgram()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const provider = useAnchorProvider()
+  const programId = getVotingapplicationProgramId('devnet')
 
   const handlePollCreated = (details: any) => {
     setPollDetails(details)
@@ -41,27 +48,59 @@ export default function CreatePollFeature() {
     
     setIsSubmitting(true)
     try {
-      // First, initialize the poll on the blockchain
-      const pollSignature = await initializePoll.mutateAsync({
-        pollId: pollDetails.pollId,
-        description: pollDetails.description,
-        pollStart: pollDetails.pollStart,
-        pollEnd: pollDetails.pollEnd
-      })
+      // Create a transaction builder
+      const tx = new anchor.web3.Transaction()
       
-      // Add a slight delay to ensure the poll transaction is processed
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Then add each candidate one by one
-      for (const candidate of candidates) {
-        await initializeCandidate.mutateAsync({
-          pollId: pollDetails.pollId,
-          candidateName: candidate
+      // Add poll initialization instruction
+      const [pollPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from(new BN(pollDetails.pollId).toArray('le', 8))],
+        programId
+      )
+
+      const initializePollIx = await program.methods
+        .initializePoll(
+          new BN(pollDetails.pollId),
+          pollDetails.description,
+          new BN(pollDetails.pollStart),
+          new BN(pollDetails.pollEnd)
+        )
+        .accounts({ 
+          signer: provider.publicKey,
+          poll: pollPda, 
+          systemProgram: new PublicKey("11111111111111111111111111111111")
         })
-        
-        // Small delay between candidate additions to prevent rate limits
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        .instruction()
+
+      tx.add(initializePollIx)
+
+      // Add candidate initialization instructions
+      for (const candidate of candidates) {
+        const [candidatePda] = PublicKey.findProgramAddressSync(
+          [
+            Buffer.from(new BN(pollDetails.pollId).toArray('le', 8)),
+            Buffer.from(candidate)
+          ],
+          programId
+        )
+
+        const initializeCandidateIx = await program.methods
+          .initializeCandidate(
+            candidate,
+            new BN(pollDetails.pollId)
+          )
+          .accounts({ 
+            signer: provider.publicKey,
+            poll: pollPda,
+            candidate: candidatePda,
+            systemProgram: new PublicKey("11111111111111111111111111111111")
+          })
+          .instruction()
+
+        tx.add(initializeCandidateIx)
       }
+
+      // Send the transaction
+      const signature = await provider.sendAndConfirm(tx)
       
       toast.success('Poll and candidates created successfully!')
       router.push('/voting')

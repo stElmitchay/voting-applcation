@@ -160,16 +160,18 @@ export function useVotingProgram() {
   // Get candidates for a specific poll
   const getPollCandidates = async (pollId: number) => {
     try {
-      const pollIdBuffer = Buffer.from(new BN(pollId).toArray('le', 8)).toString('base64')
-      const accounts = await program.account.candidate.all([
-        {
-          memcmp: {
-            offset: 8, // Skip the discriminator
-            bytes: pollIdBuffer
-          },
-        },
-      ])
-      return accounts
+      const accounts = await program.account.candidate.all()
+      // Filter candidates that belong to this poll
+      return accounts.filter(account => {
+        const [candidatePda] = PublicKey.findProgramAddressSync(
+          [
+            Buffer.from(new BN(pollId).toArray('le', 8)),
+            Buffer.from(account.account.candidateName)
+          ],
+          programId
+        )
+        return candidatePda.equals(account.publicKey)
+      })
     } catch (error) {
       console.error('Error fetching candidates:', error)
       return []
@@ -185,4 +187,19 @@ export function useVotingProgram() {
     vote,
     getPollCandidates,
   }
+}
+
+const HIDDEN_POLLS_KEY = 'hidden_polls'
+
+export function hidePool(pollId: string) {
+  const hiddenPolls = JSON.parse(localStorage.getItem(HIDDEN_POLLS_KEY) || '[]')
+  if (!hiddenPolls.includes(pollId)) {
+    hiddenPolls.push(pollId)
+    localStorage.setItem(HIDDEN_POLLS_KEY, JSON.stringify(hiddenPolls))
+  }
+}
+
+export function isPoolHidden(pollId: string): boolean {
+  const hiddenPolls = JSON.parse(localStorage.getItem(HIDDEN_POLLS_KEY) || '[]')
+  return hiddenPolls.includes(pollId)
 } 
