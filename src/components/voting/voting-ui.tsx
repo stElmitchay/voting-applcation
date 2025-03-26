@@ -1,7 +1,7 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { PublicKey } from '@solana/web3.js'
 import { useVotingProgram } from './voting-data-access'
 import { ExplorerLink } from '../cluster/cluster-ui'
@@ -204,8 +204,16 @@ export function VotingSection({
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
 
-  // Use useCallback to memoize the function
-  const checkUserSolBalance = useCallback(async () => {
+  // Check SOL balance when wallet connects
+  useEffect(() => {
+    if (publicKey) {
+      checkUserSolBalance()
+    } else {
+      setSolBalance(null)
+    }
+  }, [publicKey])
+
+  const checkUserSolBalance = async () => {
     if (!publicKey) return
     
     setIsChecking(true)
@@ -219,16 +227,7 @@ export function VotingSection({
     } finally {
       setIsChecking(false)
     }
-  }, [publicKey, checkSolBalance, setIsChecking, setSolBalance, setVoteError])
-
-  // Check SOL balance when wallet connects
-  useEffect(() => {
-    if (publicKey) {
-      checkUserSolBalance()
-    } else {
-      setSolBalance(null)
-    }
-  }, [publicKey, checkUserSolBalance])
+  }
 
   const handleVote = async (candidateName: string) => {
     if (!publicKey) {
@@ -419,8 +418,7 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
   const status = isActive ? 'Active' : now < poll.pollStart.toNumber() ? 'Not started' : 'Ended'
   const statusColor = isActive ? 'bg-green-100 text-green-800' : now < poll.pollStart.toNumber() ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
 
-  // Use useCallback to memoize the function
-  const fetchCandidates = useCallback(async () => {
+  const fetchCandidates = async () => {
     setLoading(true)
     try {
       const result = await getPollCandidates(poll.pollId.toNumber())
@@ -430,19 +428,19 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
     } finally {
       setLoading(false)
     }
-  }, [getPollCandidates, poll.pollId, setCandidates, setLoading])
+  }
 
   // Function to handle updates from child components
-  const handleUpdate = useCallback(() => {
+  const handleUpdate = () => {
     fetchCandidates()
     if (onUpdate) onUpdate()
-  }, [fetchCandidates, onUpdate])
+  }
 
   useEffect(() => {
     if (expanded) {
       fetchCandidates()
     }
-  }, [expanded, fetchCandidates])
+  }, [expanded])
 
   // Format dates nicely
   const formatDate = (timestamp: number) => {
