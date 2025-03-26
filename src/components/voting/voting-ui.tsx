@@ -6,8 +6,7 @@ import { PublicKey } from '@solana/web3.js'
 import { useVotingProgram } from './voting-data-access'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { ellipsify } from '../ui/ui-layout'
-import { hidePool, isPoolHidden } from './voting-data-access'
-import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
 
 // Component to create a new poll
 export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: any) => void }) {
@@ -199,18 +198,69 @@ export function VotingSection({
   isActive: boolean;
   onUpdate?: () => void;
 }) {
-  const { vote } = useVotingProgram()
+  const { vote, deleteCandidate, REQUIRED_SOL_AMOUNT, checkSolBalance } = useVotingProgram()
+  const { publicKey } = useWallet()
+  const [isChecking, setIsChecking] = useState(false)
+  const [solBalance, setSolBalance] = useState<number | null>(null)
+  const [voteError, setVoteError] = useState<string | null>(null)
+
+  // Check SOL balance when wallet connects
+  useEffect(() => {
+    if (publicKey) {
+      checkUserSolBalance()
+    } else {
+      setSolBalance(null)
+    }
+  }, [publicKey])
+
+  const checkUserSolBalance = async () => {
+    if (!publicKey) return
+    
+    setIsChecking(true)
+    setVoteError(null)
+    try {
+      const { balance } = await checkSolBalance(publicKey)
+      setSolBalance(balance)
+    } catch (error) {
+      console.error('Error checking SOL balance:', error)
+      setVoteError('Failed to check SOL balance')
+    } finally {
+      setIsChecking(false)
+    }
+  }
 
   const handleVote = async (candidateName: string) => {
+    if (!publicKey) {
+      toast.error('Please connect your wallet to vote')
+      return
+    }
+
     try {
+      setVoteError(null)
       await vote.mutateAsync({
         pollId,
         candidateName,
       })
       
       if (onUpdate) onUpdate()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error voting:', error)
+      setVoteError(error.message || 'Failed to cast vote')
+    }
+  }
+
+  const handleDeleteCandidate = async (candidateName: string) => {
+    if (window.confirm(`Are you sure you want to delete candidate "${candidateName}"? This action cannot be undone.`)) {
+      try {
+        await deleteCandidate.mutateAsync({
+          pollId,
+          candidateName,
+        })
+        
+        if (onUpdate) onUpdate()
+      } catch (error) {
+        console.error('Error deleting candidate:', error)
+      }
     }
   }
 
@@ -219,7 +269,65 @@ export function VotingSection({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <h3 className="text-lg font-medium mb-4">Cast your vote</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Cast your vote</h3>
+        <div className="text-sm text-gray-600">
+          <span className="inline-flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Requires {REQUIRED_SOL_AMOUNT} SOL to vote
+          </span>
+        </div>
+      </div>
+      
+      {publicKey && (
+        <div className="mb-4">
+          {solBalance !== null && (
+            <div className={`p-3 rounded-lg text-sm ${solBalance >= REQUIRED_SOL_AMOUNT ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'} flex justify-between items-center`}>
+              <div className="flex items-center">
+                {solBalance >= REQUIRED_SOL_AMOUNT ? (
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                )}
+                <span>
+                  {solBalance >= REQUIRED_SOL_AMOUNT 
+                    ? `You have ${solBalance.toFixed(4)} SOL. You can vote!` 
+                    : `You have ${solBalance.toFixed(4)} SOL. You need at least ${REQUIRED_SOL_AMOUNT} SOL to vote.`}
+                </span>
+              </div>
+              <button 
+                onClick={checkUserSolBalance} 
+                className="text-sm px-2 py-1 rounded hover:bg-opacity-80 focus:outline-none"
+                disabled={isChecking}
+                title="Refresh SOL balance"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+          )}
+          
+          {isChecking && (
+            <div className="flex justify-center items-center my-2 p-3 bg-blue-50 rounded-lg">
+              <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-blue-600 rounded-full"></div>
+              <span className="text-sm text-blue-700">Checking SOL balance...</span>
+            </div>
+          )}
+          
+          {voteError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mt-2">
+              {voteError}
+            </div>
+          )}
+        </div>
+      )}
       
       <div className="grid grid-cols-1 gap-4">
         {candidates.map((candidate, index) => {
@@ -229,36 +337,53 @@ export function VotingSection({
             ? Math.round((voteCount / totalVotes) * 100) 
             : 0
             
+          const canVote = isActive && publicKey && (!isChecking) && (solBalance !== null && solBalance >= REQUIRED_SOL_AMOUNT)
+            
           return (
-            <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+            <div key={index} className="border border-gray-200 rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-lg font-medium text-gray-900">{candidateName}</h4>
-                <button
-                  onClick={() => handleVote(candidateName)}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!isActive || vote.isPending}
-                >
-                  {vote.isPending ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-white rounded-full"></div>
-                      <span>Voting...</span>
-                    </div>
-                  ) : (
-                    'Vote'
+                <h4 className="text-lg font-medium">{candidateName}</h4>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleVote(candidateName)}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!canVote || vote.isPending}
+                    title={!publicKey 
+                      ? 'Connect your wallet to vote' 
+                      : !isActive 
+                      ? 'Poll is not active' 
+                      : isChecking
+                      ? 'Checking SOL balance...'
+                      : solBalance !== null && solBalance < REQUIRED_SOL_AMOUNT
+                      ? `You need at least ${REQUIRED_SOL_AMOUNT} SOL to vote`
+                      : ''}
+                  >
+                    {vote.isPending ? 'Voting...' : 'Vote'}
+                  </button>
+                  {isActive && (
+                    <button
+                      onClick={() => handleDeleteCandidate(candidateName)}
+                      className="p-2 text-gray-600 hover:text-red-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      title="Delete candidate"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   )}
-                </button>
+                </div>
               </div>
               
-              <div className="mt-2">
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>{voteCount} votes</span>
-                  <span>{votePercentage}%</span>
-                </div>
+              <div className="space-y-2">
                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${votePercentage}%` }}
                   ></div>
+                </div>
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>{voteCount} votes</span>
+                  <span>{votePercentage}%</span>
                 </div>
               </div>
             </div>
@@ -267,7 +392,7 @@ export function VotingSection({
       </div>
       
       <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="text-sm flex justify-between font-medium text-gray-700">
+        <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
           <span>Total Votes</span>
           <span>{totalVotes}</span>
         </div>
@@ -278,13 +403,20 @@ export function VotingSection({
 
 // Component to display a poll with its candidates
 export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: PublicKey; onUpdate: () => void }) {
-  const { getPollCandidates } = useVotingProgram()
+  const { getPollCandidates, hidePoll } = useVotingProgram()
   const [candidates, setCandidates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editedDescription, setEditedDescription] = useState(poll.description)
-  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+
+  // Check if poll has started
+  const now = Math.floor(Date.now() / 1000)
+  const hasStarted = now >= poll.pollStart.toNumber()
+  const isActive = now >= poll.pollStart.toNumber() && now <= poll.pollEnd.toNumber()
+  const status = isActive ? 'Active' : now < poll.pollStart.toNumber() ? 'Not started' : 'Ended'
+  const statusColor = isActive ? 'bg-green-100 text-green-800' : now < poll.pollStart.toNumber() ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
 
   const fetchCandidates = async () => {
     setLoading(true)
@@ -329,46 +461,26 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
     return `${days}d ${hours}h ${minutes}m`
   }
 
-  // Check if poll is active
-  const now = Math.floor(Date.now() / 1000)
-  const isActive = now >= poll.pollStart.toNumber() && now <= poll.pollEnd.toNumber()
-  const status = isActive ? 'Active' : now < poll.pollStart.toNumber() ? 'Not started' : 'Ended'
-  const statusColor = isActive ? 'bg-green-100 text-green-800' : now < poll.pollStart.toNumber() ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to hide this poll?')) {
-      hidePool(poll.pollId.toString())
-      onUpdate()
+  const handleEdit = async () => {
+    setError(null)
+    
+    if (!editedDescription.trim()) {
+      setError('Description is required')
+      return
     }
-  }
 
-  const handleEdit = () => {
-    setIsEditing(!isEditing)
-    if (!isEditing) {
-      setEditedDescription(poll.description)
-    }
-  }
-
-  const handleSaveEdit = () => {
-    // Save to local storage
-    const editedPolls = JSON.parse(localStorage.getItem('edited_polls') || '{}')
-    editedPolls[poll.pollId.toString()] = {
-      ...poll,
-      description: editedDescription
-    }
-    localStorage.setItem('edited_polls', JSON.stringify(editedPolls))
+    // Update only in the UI
+    poll.description = editedDescription
     setIsEditing(false)
     onUpdate()
   }
 
-  // Get edited description if it exists
-  useEffect(() => {
-    const editedPolls = JSON.parse(localStorage.getItem('edited_polls') || '{}')
-    const editedPoll = editedPolls[poll.pollId.toString()]
-    if (editedPoll) {
-      setEditedDescription(editedPoll.description)
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to hide this poll? This action will remove it from your view but the poll will still exist on the blockchain.')) {
+      hidePoll(poll.pollId.toNumber())
+      onUpdate()
     }
-  }, [poll.pollId])
+  }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 mb-4 overflow-hidden">
@@ -378,12 +490,19 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
             <span className={`${statusColor} text-xs font-medium px-2.5 py-0.5 rounded-full`}>
               {status}
             </span>
+            {isActive && (
+              <span className="text-xs text-gray-500">
+                Ends in {getTimeRemaining(poll.pollEnd.toNumber())}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleEdit}
+              onClick={() => setIsEditing(!isEditing)}
               className="text-gray-600 hover:text-blue-600"
-              title="Edit poll"
+              title="Edit description"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
@@ -392,16 +511,11 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
               className="text-gray-600 hover:text-red-600"
               title="Hide poll"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
           </div>
-          {isActive && (
-            <span className="text-xs text-gray-500">
-              Ends in {getTimeRemaining(poll.pollEnd.toNumber())}
-            </span>
-          )}
         </div>
         
         <h3 className="text-lg font-bold text-gray-900 mb-2 hover:text-blue-600 cursor-pointer" onClick={() => setExpanded(!expanded)}>
@@ -409,44 +523,80 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
         </h3>
         
         {isEditing ? (
-          <div className="mb-3">
-            <textarea
-              value={editedDescription}
-              onChange={(e) => setEditedDescription(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              rows={3}
-            />
-            <div className="flex justify-end gap-2 mt-2">
+          <div className="space-y-4 mb-3">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-600">Description</label>
+              <textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                placeholder="Describe what your poll is about"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-600">Start Date</label>
+                <input
+                  type="datetime-local"
+                  value={new Date(poll.pollStart.toNumber() * 1000).toISOString().slice(0, 16)}
+                  className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 text-sm"
+                  disabled
+                  title="Start date cannot be modified after poll creation"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-600">End Date</label>
+                <input
+                  type="datetime-local"
+                  value={new Date(poll.pollEnd.toNumber() * 1000).toISOString().slice(0, 16)}
+                  className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 text-sm"
+                  disabled
+                  title="End date cannot be modified after poll creation"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
               <button
-                onClick={() => setIsEditing(false)}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                onClick={() => {
+                  setIsEditing(false)
+                  setEditedDescription(poll.description)
+                  setError(null)
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSaveEdit}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={handleEdit}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
               >
-                Save
+                Save Changes
               </button>
             </div>
           </div>
         ) : (
-          <p className="text-gray-700 text-sm mb-3">{editedDescription}</p>
+          <>
+            <p className="text-gray-700 text-sm mb-3">{poll.description}</p>
+            <div className="text-xs text-gray-500 mb-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="block mb-1">Start:</span>
+                  {formatDate(poll.pollStart.toNumber())}
+                </div>
+                <div>
+                  <span className="block mb-1">End:</span>
+                  {formatDate(poll.pollEnd.toNumber())}
+                </div>
+              </div>
+            </div>
+          </>
         )}
-        
-        <div className="text-xs text-gray-500 mb-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="block mb-1">Start:</span>
-              {formatDate(poll.pollStart.toNumber())}
-            </div>
-            <div>
-              <span className="block mb-1">End:</span>
-              {formatDate(poll.pollEnd.toNumber())}
-            </div>
-          </div>
-        </div>
         
         <button 
           className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
@@ -485,7 +635,7 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
               <>
                 <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={handleUpdate} />
                 
-                {isActive && (
+                {!hasStarted && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Add New Candidate</h4>
                     <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={handleUpdate} />
@@ -495,7 +645,13 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
             ) : (
               <div className="text-center py-4">
                 <p className="text-gray-500">No candidates found for this poll.</p>
-                {isActive && <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={handleUpdate} />}
+                {!hasStarted ? (
+                  <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={handleUpdate} />
+                ) : (
+                  <p className="text-sm text-red-600 mt-2">
+                    Cannot add candidates after poll has started.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -508,7 +664,6 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
 // Component to list all polls
 export function PollsList() {
   const { polls } = useVotingProgram()
-  const [forceUpdate, setForceUpdate] = useState(0)
   
   // Debug polls data
   useEffect(() => {
@@ -542,27 +697,14 @@ export function PollsList() {
     )
   }
 
-  // Filter out hidden polls
-  const visiblePolls = polls.data.filter(
-    pollAccount => !isPoolHidden(pollAccount.account.pollId.toString())
-  )
-
-  if (visiblePolls.length === 0) {
-    return (
-      <div className="bg-blue-50 text-blue-800 rounded-lg p-4 text-sm">
-        No visible polls. All polls have been hidden.
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-2">
-      {visiblePolls.map((pollAccount) => (
+      {polls.data.map((pollAccount) => (
         <PollCard
           key={pollAccount.publicKey.toString()}
           poll={pollAccount.account}
           publicKey={pollAccount.publicKey}
-          onUpdate={() => setForceUpdate(prev => prev + 1)}
+          onUpdate={() => polls.refetch()}
         />
       ))}
     </div>
