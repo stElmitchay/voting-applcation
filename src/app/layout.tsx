@@ -7,6 +7,23 @@ import {ReactQueryProvider} from './react-query-provider'
 export const metadata = {
   title: 'Utopia - Decentralized Voting',
   description: 'Create and participate in polls on the Solana blockchain',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
+    apple: [
+      { url: '/favicon.svg', type: 'image/svg+xml' }
+    ]
+  },
+  manifest: '/manifest.json',
+  themeColor: '#0A1A14',
+  viewport: 'width=device-width, initial-scale=1',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Utopia'
+  }
 }
 
 // Navigation links

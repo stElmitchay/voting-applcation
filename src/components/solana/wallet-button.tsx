@@ -3,13 +3,26 @@
 import { useWallet, Wallet } from '@solana/wallet-adapter-react'
 import { WalletName } from '@solana/wallet-adapter-base'
 import { useWalletModal } from '@solana/wallet-adapter-react-ui'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react'
 import { ellipsify } from '../ui/ui-layout'
+import { motion } from 'framer-motion'
 
 export function CustomWalletButton() {
   const { wallets, wallet, publicKey, connecting, connected, disconnect } = useWallet()
   const { setVisible } = useWalletModal()
   const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleConnectClick = useCallback(() => {
     setVisible(true)
@@ -29,7 +42,7 @@ export function CustomWalletButton() {
     if (connected && publicKey) {
       return (
         <div className="flex items-center">
-          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+          <div className="w-2 h-2 bg-[#A3E4D7] rounded-full mr-2"></div>
           <span>{formattedAddress}</span>
         </div>
       )
@@ -38,7 +51,7 @@ export function CustomWalletButton() {
     if (connecting) {
       return (
         <div className="flex items-center">
-          <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-white rounded-full"></div>
+          <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#0A1A14] rounded-full"></div>
           <span>Connecting...</span>
         </div>
       )
@@ -52,12 +65,14 @@ export function CustomWalletButton() {
   }, [connecting, connected, publicKey, formattedAddress])
 
   return (
-    <div className="relative">
-      <button
-        className={`inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+    <div className="relative" ref={dropdownRef}>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className={`inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#A3E4D7] ${
           connected
-            ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-            : "bg-blue-600 text-white hover:bg-blue-700"
+            ? "bg-[#143D28] text-[#F5F5F5] hover:bg-[#1E4D38] border border-[#A3E4D7]/30"
+            : "bg-[#A3E4D7] text-[#0A1A14] hover:bg-[#8CD0C3]"
         }`}
         onClick={connected ? () => setShowDropdown(!showDropdown) : handleConnectClick}
       >
@@ -72,19 +87,22 @@ export function CustomWalletButton() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         )}
-      </button>
+      </motion.button>
 
       {showDropdown && connected && (
-        <div 
-          className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-10"
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute right-0 mt-2 w-48 rounded-md bg-[#143D28] py-1 shadow-lg ring-1 ring-[#A3E4D7]/20 z-10"
         >
-          <button
-            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          <motion.button
+            whileHover={{ backgroundColor: "rgba(163, 228, 215, 0.1)" }}
+            className="flex w-full items-center px-4 py-2 text-sm text-[#F5F5F5] hover:bg-[#A3E4D7]/10"
             onClick={handleDisconnectClick}
           >
             Disconnect
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       )}
     </div>
   )

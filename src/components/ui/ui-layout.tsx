@@ -14,27 +14,31 @@ export function UiLayout({ children, links }: { children: ReactNode; links: { la
   const pathname = usePathname()
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      <div className="bg-white shadow-sm border-b border-gray-100">
+    <div className="h-full flex flex-col bg-[#0A1A14]">
+      <div className="bg-[#0A1A14] shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
-              <Link className="flex items-center text-gray-900" href="/">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white mr-3">
+              <Link className="flex items-center text-[#F5F5F5]" href="/">
+                <div className="h-8 w-8 rounded-full bg-[#A3E4D7] flex items-center justify-center text-[#0A1A14] mr-3">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <span className="font-semibold text-xl bg-gradient-to-r from-blue-600 to-blue-700 text-transparent bg-clip-text">Utopia</span>
+                <span className="font-semibold text-xl text-[#F5F5F5]">Utopia</span>
               </Link>
-              <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
+              <div className="hidden sm:ml-8 sm:flex sm:space-x-6">
                 {links.map(({ label, path }) => (
                   <Link 
                     key={path}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      pathname.startsWith(path) 
-                        ? 'border-blue-500 text-gray-900' 
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200 ${
+                      path === '/' 
+                        ? pathname === '/' 
+                          ? 'border-[#A3E4D7] text-[#A3E4D7]'
+                          : 'border-transparent text-[#F5F5F5]/80 hover:text-[#A3E4D7] hover:border-[#A3E4D7]/50'
+                        : pathname.startsWith(path)
+                          ? 'border-[#A3E4D7] text-[#A3E4D7]'
+                          : 'border-transparent text-[#F5F5F5]/80 hover:text-[#A3E4D7] hover:border-[#A3E4D7]/50'
                     }`}
                     href={path}
                   >
@@ -57,11 +61,11 @@ export function UiLayout({ children, links }: { children: ReactNode; links: { la
           <AccountChecker />
         </ClusterChecker>
       </div>
-      <div className="flex-grow">
+      <div className="flex-grow text-[#F5F5F5]">
         <Suspense
           fallback={
             <div className="text-center my-32">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#A3E4D7]"></div>
             </div>
           }
         >
@@ -69,12 +73,12 @@ export function UiLayout({ children, links }: { children: ReactNode; links: { la
         </Suspense>
         <Toaster position="bottom-right" />
       </div>
-      <footer className="bg-white border-t border-gray-100 py-4">
+      <footer className="bg-[#0A1A14] border-t border-[#143D28] py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-[#F5F5F5]/70">
             Utopia - Decentralized Voting Platform - Built with{' '}
             <a
-              className="text-blue-600 hover:text-blue-800"
+              className="text-[#A3E4D7] hover:text-[#8CD0C3]"
               href="https://solana.com"
               target="_blank"
               rel="noopener noreferrer"

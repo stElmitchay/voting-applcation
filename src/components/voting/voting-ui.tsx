@@ -67,28 +67,33 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="bg-[#143D28]/20 border border-[#143D28] text-[#A3E4D7] px-4 py-3 rounded-lg text-sm">
+        <p className="font-medium mb-1">Important Notice:</p>
+        <p>Once a poll is created, it cannot be edited or deleted. All details including description, dates, and candidates will be permanently recorded on the blockchain.</p>
+      </div>
+
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
       
       <div className="space-y-1">
-        <label className="text-sm font-medium text-gray-600">Poll ID</label>
+        <label className="text-sm font-medium text-[#F5F5F5]">Poll ID</label>
         <input
           type="number"
           placeholder="Enter a unique identifier for your poll"
-          className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          className="w-full px-4 py-2.5 bg-[#0A1A14] border border-[#143D28] rounded-lg text-[#F5F5F5] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#A3E4D7]/50"
           value={pollId}
           onChange={(e) => setPollId(e.target.value)}
           required
         />
       </div>
       <div className="space-y-1">
-        <label className="text-sm font-medium text-gray-600">Description</label>
+        <label className="text-sm font-medium text-[#F5F5F5]">Description</label>
         <textarea
           placeholder="Describe what your poll is about"
-          className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          className="w-full px-4 py-2.5 bg-[#0A1A14] border border-[#143D28] rounded-lg text-[#F5F5F5] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#A3E4D7]/50"
           rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -97,20 +102,20 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-600">Start Date</label>
+          <label className="text-sm font-medium text-[#F5F5F5]">Start Date</label>
           <input
             type="datetime-local"
-            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className="w-full px-4 py-2.5 bg-[#0A1A14] border border-[#143D28] rounded-lg text-[#F5F5F5] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent"
             value={pollStart}
             onChange={(e) => setPollStart(e.target.value)}
             required
           />
         </div>
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-600">End Date</label>
+          <label className="text-sm font-medium text-[#F5F5F5]">End Date</label>
           <input
             type="datetime-local"
-            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className="w-full px-4 py-2.5 bg-[#0A1A14] border border-[#143D28] rounded-lg text-[#F5F5F5] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent"
             value={pollEnd}
             onChange={(e) => setPollEnd(e.target.value)}
             required
@@ -120,12 +125,12 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
       <div className="pt-2">
         <button
           type="submit"
-          className="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="w-full px-4 py-2.5 bg-[#143D28] text-[#F5F5F5] text-sm font-medium rounded-lg hover:bg-[#1e5438] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={initializePoll.isPending}
         >
           {initializePoll.isPending ? (
             <div className="flex items-center justify-center">
-              <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-white rounded-full"></div>
+              <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#F5F5F5] rounded-full"></div>
               <span>Creating...</span>
             </div>
           ) : (
@@ -141,28 +146,44 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
 export function AddCandidateForm({ pollId, onUpdate }: { pollId: number; onUpdate?: () => void }) {
   const { initializeCandidate } = useVotingProgram()
   const [candidateName, setCandidateName] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!candidateName) return
+    setError(null)
+    
+    if (!candidateName.trim()) {
+      setError('Candidate name is required')
+      return
+    }
 
-    await initializeCandidate.mutateAsync({
-      pollId,
-      candidateName,
-    })
-
-    setCandidateName('')
-    if (onUpdate) onUpdate()
+    try {
+      await initializeCandidate.mutateAsync({
+        pollId,
+        candidateName: candidateName.trim(),
+      })
+      
+      setCandidateName('')
+      if (onUpdate) onUpdate()
+    } catch (error: any) {
+      console.error('Error adding candidate:', error)
+      setError(error.message || 'Failed to add candidate')
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 items-end mb-4">
-      <div className="form-control flex-grow space-y-1">
-        <label className="text-sm font-medium text-gray-600">Candidate Name</label>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-[#F5F5F5]">Candidate Name</label>
         <input
           type="text"
           placeholder="Enter candidate name"
-          className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          className="w-full px-4 py-2.5 bg-[#0A1A14] border border-[#143D28] rounded-lg text-[#F5F5F5] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#A3E4D7]/50"
           value={candidateName}
           onChange={(e) => setCandidateName(e.target.value)}
           required
@@ -170,12 +191,12 @@ export function AddCandidateForm({ pollId, onUpdate }: { pollId: number; onUpdat
       </div>
       <button
         type="submit"
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        className="w-full px-4 py-2.5 bg-[#A3E4D7] text-[#0A1A14] text-sm font-medium rounded-lg hover:bg-[#8CD0C3] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={initializeCandidate.isPending}
       >
         {initializeCandidate.isPending ? (
-          <div className="flex items-center">
-            <div className="animate-spin h-3 w-3 mr-2 border-b-2 border-white rounded-full"></div>
+          <div className="flex items-center justify-center">
+            <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#0A1A14] rounded-full"></div>
             <span>Adding...</span>
           </div>
         ) : (
@@ -268,10 +289,10 @@ export function VotingSection({
   const totalVotes = candidates.reduce((sum, c) => sum + Number(c.account.candidateVotes), 0)
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="bg-[#0A1A14] rounded-lg border border-[#143D28] p-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium">Cast your vote</h3>
-        <div className="text-sm text-gray-600">
+        <h3 className="text-lg font-medium text-[#F5F5F5]">Cast your vote</h3>
+        <div className="text-sm text-[#A3E4D7]/70">
           <span className="inline-flex items-center">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -284,7 +305,7 @@ export function VotingSection({
       {publicKey && (
         <div className="mb-4">
           {solBalance !== null && (
-            <div className={`p-3 rounded-lg text-sm ${solBalance >= REQUIRED_SOL_AMOUNT ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'} flex justify-between items-center`}>
+            <div className={`p-3 rounded-lg text-sm ${solBalance >= REQUIRED_SOL_AMOUNT ? 'bg-[#143D28] text-[#F5F5F5]' : 'bg-[#143D28] text-[#F5F5F5]/70'} flex justify-between items-center`}>
               <div className="flex items-center">
                 {solBalance >= REQUIRED_SOL_AMOUNT ? (
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +324,7 @@ export function VotingSection({
               </div>
               <button 
                 onClick={checkUserSolBalance} 
-                className="text-sm px-2 py-1 rounded hover:bg-opacity-80 focus:outline-none"
+                className="text-sm px-2 py-1 rounded hover:bg-[#0A1A14]/50 focus:outline-none"
                 disabled={isChecking}
                 title="Refresh SOL balance"
               >
@@ -315,14 +336,14 @@ export function VotingSection({
           )}
           
           {isChecking && (
-            <div className="flex justify-center items-center my-2 p-3 bg-blue-50 rounded-lg">
-              <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-blue-600 rounded-full"></div>
-              <span className="text-sm text-blue-700">Checking SOL balance...</span>
+            <div className="flex justify-center items-center my-2 p-3 bg-[#143D28] rounded-lg">
+              <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#F5F5F5] rounded-full"></div>
+              <span className="text-sm text-[#F5F5F5]">Checking SOL balance...</span>
             </div>
           )}
           
           {voteError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mt-2">
+            <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm mt-2">
               {voteError}
             </div>
           )}
@@ -340,13 +361,13 @@ export function VotingSection({
           const canVote = isActive && publicKey && (!isChecking) && (solBalance !== null && solBalance >= REQUIRED_SOL_AMOUNT)
             
           return (
-            <div key={index} className="border border-gray-200 rounded-lg p-4">
+            <div key={index} className="border border-[#143D28] rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-lg font-medium">{candidateName}</h4>
+                <h4 className="text-lg font-medium text-[#F5F5F5]">{candidateName}</h4>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleVote(candidateName)}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-[#143D28] text-[#F5F5F5] text-sm font-medium rounded-lg hover:bg-[#1e5438] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!canVote || vote.isPending}
                     title={!publicKey 
                       ? 'Connect your wallet to vote' 
@@ -358,12 +379,19 @@ export function VotingSection({
                       ? `You need at least ${REQUIRED_SOL_AMOUNT} SOL to vote`
                       : ''}
                   >
-                    {vote.isPending ? 'Voting...' : 'Vote'}
+                    {vote.isPending ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#F5F5F5] rounded-full"></div>
+                        <span>Voting...</span>
+                      </div>
+                    ) : (
+                      'Vote'
+                    )}
                   </button>
                   {isActive && (
                     <button
                       onClick={() => handleDeleteCandidate(candidateName)}
-                      className="p-2 text-gray-600 hover:text-red-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      className="p-2 text-[#A3E4D7]/70 hover:text-red-500 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                       title="Delete candidate"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -375,13 +403,13 @@ export function VotingSection({
               </div>
               
               <div className="space-y-2">
-                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-[#143D28] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 transition-all duration-300"
+                    className="h-full bg-[#A3E4D7] transition-all duration-300"
                     style={{ width: `${votePercentage}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex justify-between text-sm text-[#F5F5F5]">
                   <span>{voteCount} votes</span>
                   <span>{votePercentage}%</span>
                 </div>
@@ -391,8 +419,8 @@ export function VotingSection({
         })}
       </div>
       
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+      <div className="mt-6 pt-4 border-t border-[#143D28]">
+        <div className="flex justify-between text-sm font-medium text-[#F5F5F5] mb-2">
           <span>Total Votes</span>
           <span>{totalVotes}</span>
         </div>
@@ -403,13 +431,10 @@ export function VotingSection({
 
 // Component to display a poll with its candidates
 export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: PublicKey; onUpdate: () => void }) {
-  const { getPollCandidates, hidePoll } = useVotingProgram()
+  const { getPollCandidates } = useVotingProgram()
   const [candidates, setCandidates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedDescription, setEditedDescription] = useState(poll.description)
-  const [error, setError] = useState<string | null>(null)
 
   // Check if poll has started
   const now = Math.floor(Date.now() / 1000)
@@ -461,145 +486,50 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
     return `${days}d ${hours}h ${minutes}m`
   }
 
-  const handleEdit = async () => {
-    setError(null)
-    
-    if (!editedDescription.trim()) {
-      setError('Description is required')
-      return
-    }
-
-    // Update only in the UI
-    poll.description = editedDescription
-    setIsEditing(false)
-    onUpdate()
-  }
-
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to hide this poll? This action will remove it from your view but the poll will still exist on the blockchain.')) {
-      hidePoll(poll.pollId.toNumber())
-      onUpdate()
-    }
-  }
-
   return (
-    <div className="bg-white rounded-lg border border-gray-200 mb-4 overflow-hidden">
+    <div className="bg-[#0A1A14] rounded-lg border border-[#143D28] mb-4 overflow-hidden">
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2">
-            <span className={`${statusColor} text-xs font-medium px-2.5 py-0.5 rounded-full`}>
+            <span className={`${
+              isActive 
+                ? 'bg-[#143D28] text-[#F5F5F5]' 
+                : now < poll.pollStart.toNumber() 
+                ? 'bg-[#143D28] text-[#F5F5F5]/70' 
+                : 'bg-[#143D28] text-[#F5F5F5]/50'
+            } text-xs font-medium px-2.5 py-0.5 rounded-full`}>
               {status}
             </span>
             {isActive && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-[#F5F5F5]">
                 Ends in {getTimeRemaining(poll.pollEnd.toNumber())}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="text-gray-600 hover:text-blue-600"
-              title="Edit description"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            <button
-              onClick={handleDelete}
-              className="text-gray-600 hover:text-red-600"
-              title="Hide poll"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
         </div>
         
-        <h3 className="text-lg font-bold text-gray-900 mb-2 hover:text-blue-600 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+        <h3 className="text-lg font-bold text-[#F5F5F5] mb-2 hover:text-[#F5F5F5] cursor-pointer" onClick={() => setExpanded(!expanded)}>
           Poll #{poll.pollId.toString()}
         </h3>
         
-        {isEditing ? (
-          <div className="space-y-4 mb-3">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
+        <>
+          <p className="text-[#F5F5F5]/70 text-sm mb-3">{poll.description}</p>
+          <div className="text-xs text-[#F5F5F5]/50 mb-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="block mb-1 text-[#F5F5F5]">Start:</span>
+                {formatDate(poll.pollStart.toNumber())}
               </div>
-            )}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600">Description</label>
-              <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
-                placeholder="Describe what your poll is about"
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-600">Start Date</label>
-                <input
-                  type="datetime-local"
-                  value={new Date(poll.pollStart.toNumber() * 1000).toISOString().slice(0, 16)}
-                  className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 text-sm"
-                  disabled
-                  title="Start date cannot be modified after poll creation"
-                />
+              <div>
+                <span className="block mb-1 text-[#F5F5F5]">End:</span>
+                {formatDate(poll.pollEnd.toNumber())}
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-600">End Date</label>
-                <input
-                  type="datetime-local"
-                  value={new Date(poll.pollEnd.toNumber() * 1000).toISOString().slice(0, 16)}
-                  className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 text-sm"
-                  disabled
-                  title="End date cannot be modified after poll creation"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setIsEditing(false)
-                  setEditedDescription(poll.description)
-                  setError(null)
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEdit}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-              >
-                Save Changes
-              </button>
             </div>
           </div>
-        ) : (
-          <>
-            <p className="text-gray-700 text-sm mb-3">{poll.description}</p>
-            <div className="text-xs text-gray-500 mb-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="block mb-1">Start:</span>
-                  {formatDate(poll.pollStart.toNumber())}
-                </div>
-                <div>
-                  <span className="block mb-1">End:</span>
-                  {formatDate(poll.pollEnd.toNumber())}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        </>
         
         <button 
-          className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
+          className="text-sm text-[#F5F5F5] hover:text-[#8CD0C3] font-medium flex items-center"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? 'Hide Details' : 'Show Details'}
@@ -615,40 +545,40 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
         </button>
 
         {expanded && (
-          <div className="mt-4 border-t border-gray-200 pt-4">
+          <div className="mt-4 border-t border-[#143D28] pt-4">
             <div className="mb-3">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Poll Details</h4>
-              <p className="text-xs text-gray-600 mb-1">
+              <h4 className="text-sm font-medium text-[#F5F5F5] mb-2">Poll Details</h4>
+              <p className="text-xs text-[#F5F5F5]/70 mb-1">
                 <span className="font-medium">Address:</span>{' '}
                 <ExplorerLink path={`account/${publicKey}`} label={ellipsify(publicKey.toString())} />
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-[#F5F5F5]/70">
                 <span className="font-medium">Candidates:</span> {poll.candidateAmount.toString()}
               </p>
             </div>
 
             {loading ? (
               <div className="flex justify-center my-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A3E4D7]"></div>
               </div>
             ) : candidates.length > 0 ? (
               <>
                 <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={handleUpdate} />
                 
                 {!hasStarted && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Add New Candidate</h4>
+                  <div className="mt-4 pt-4 border-t border-[#143D28]">
+                    <h4 className="text-sm font-medium text-[#F5F5F5] mb-2">Add New Candidate</h4>
                     <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={handleUpdate} />
                   </div>
                 )}
               </>
             ) : (
               <div className="text-center py-4">
-                <p className="text-gray-500">No candidates found for this poll.</p>
+                <p className="text-[#F5F5F5]/70">No candidates found for this poll.</p>
                 {!hasStarted ? (
                   <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={handleUpdate} />
                 ) : (
-                  <p className="text-sm text-red-600 mt-2">
+                  <p className="text-sm text-red-400 mt-2">
                     Cannot add candidates after poll has started.
                   </p>
                 )}
@@ -665,17 +595,10 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
 export function PollsList() {
   const { polls } = useVotingProgram()
   
-  // Debug polls data
-  useEffect(() => {
-    if (polls.data) {
-      console.log('Polls data:', polls.data)
-    }
-  }, [polls.data])
-
   if (polls.isLoading) {
     return (
       <div className="flex justify-center py-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#A3E4D7]"></div>
       </div>
     )
   }
@@ -683,7 +606,7 @@ export function PollsList() {
   if (polls.error) {
     console.error('Error loading polls:', polls.error)
     return (
-      <div className="bg-red-50 text-red-800 rounded-lg p-4 text-sm">
+      <div className="bg-red-900/20 text-red-400 rounded-lg p-4 text-sm border border-red-500/20">
         Error loading polls. Please try again.
       </div>
     )
@@ -691,7 +614,7 @@ export function PollsList() {
 
   if (!polls.data || polls.data.length === 0) {
     return (
-      <div className="bg-blue-50 text-blue-800 rounded-lg p-4 text-sm">
+      <div className="bg-[#143D28] text-[#F5F5F5] rounded-lg p-4 text-sm border border-[#F5F5F5]/20">
         No polls found. Create one to get started!
       </div>
     )
