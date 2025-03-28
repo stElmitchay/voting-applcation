@@ -147,8 +147,18 @@ export default function CreatePollFeature() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-[#F5F5F5]">Create a New Poll</h1>
-            <div className="text-sm font-medium text-[#A3E4D7]">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-[#A3E4D7] rounded-full flex items-center justify-center mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0A1A14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-bold text-[#F5F5F5]">Create a New Poll</h1>
+            </div>
+            <div className="text-sm font-medium text-[#A3E4D7] flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
               Step {stage} of 2
             </div>
           </div>
@@ -157,8 +167,18 @@ export default function CreatePollFeature() {
               <div style={{ width: `${stage * 50}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-[#0A1A14] justify-center bg-[#A3E4D7] transition-all duration-500"></div>
             </div>
             <div className="flex justify-between">
-              <div className={`text-sm ${stage >= 1 ? 'font-medium text-[#A3E4D7]' : 'text-[#F5F5F5]/50'}`}>Poll Details</div>
-              <div className={`text-sm ${stage >= 2 ? 'font-medium text-[#A3E4D7]' : 'text-[#F5F5F5]/50'}`}>Add Candidates</div>
+              <div className={`text-sm flex items-center ${stage >= 1 ? 'font-medium text-[#A3E4D7]' : 'text-[#F5F5F5]/50'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Poll Details
+              </div>
+              <div className={`text-sm flex items-center ${stage >= 2 ? 'font-medium text-[#A3E4D7]' : 'text-[#F5F5F5]/50'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Add Candidates
+              </div>
             </div>
           </div>
         </div>
@@ -166,7 +186,14 @@ export default function CreatePollFeature() {
         <div className="bg-[#0A1A14] border border-[#143D28] overflow-hidden rounded-lg">
           {stage === 1 && (
             <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg font-medium text-[#F5F5F5] mb-4">Enter Poll Details</h2>
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-[#A3E4D7] rounded-full flex items-center justify-center mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0A1A14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-medium text-[#F5F5F5]">Enter Poll Details</h2>
+              </div>
               <div className="space-y-5">
                 <CreatePollForm onPollCreated={handlePollCreated} />
               </div>
@@ -175,7 +202,14 @@ export default function CreatePollFeature() {
 
           {stage === 2 && (
             <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg font-medium text-[#F5F5F5] mb-4">Add Candidates</h2>
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-[#A3E4D7] rounded-full flex items-center justify-center mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0A1A14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-medium text-[#F5F5F5]">Add Candidates</h2>
+              </div>
               <p className="text-sm text-[#A3E4D7]/70 mb-4">
                 Add at least two candidates to your poll. Voters will be able to choose between these options.
               </p>
@@ -191,8 +225,11 @@ export default function CreatePollFeature() {
                 />
                 <button
                   onClick={handleAddCandidate}
-                  className="px-4 py-2.5 bg-[#143D28] text-[#F5F5F5] text-sm font-medium rounded-r-lg hover:bg-[#1e5438] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2"
+                  className="px-4 py-2.5 bg-[#143D28] text-[#F5F5F5] text-sm font-medium rounded-r-lg hover:bg-[#1e5438] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 flex items-center"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
                   Add
                 </button>
               </div>
@@ -227,15 +264,18 @@ export default function CreatePollFeature() {
               <div className="flex justify-between">
                 <button
                   onClick={() => setStage(1)}
-                  className="px-4 py-2 border border-[#143D28] text-sm font-medium rounded-md text-[#F5F5F5] bg-[#0A1A14] hover:bg-[#143D28] focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2"
+                  className="px-4 py-2 border border-[#143D28] text-sm font-medium rounded-md text-[#F5F5F5] bg-[#0A1A14] hover:bg-[#143D28] focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 flex items-center"
                   disabled={isSubmitting}
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
                   Back
                 </button>
                 <button
                   onClick={handleFinish}
                   disabled={candidates.length < 2 || isSubmitting}
-                  className={`px-4 py-2 text-sm font-medium rounded-md ${
+                  className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
                     candidates.length < 2 || isSubmitting
                       ? 'bg-[#143D28]/50 text-[#F5F5F5]/50 cursor-not-allowed'
                       : 'bg-[#143D28] text-[#F5F5F5] hover:bg-[#1e5438] focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2'
@@ -247,7 +287,12 @@ export default function CreatePollFeature() {
                       <span>Creating...</span>
                     </div>
                   ) : (
-                    'Create Poll'
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Create Poll
+                    </>
                   )}
                 </button>
               </div>

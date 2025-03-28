@@ -1,7 +1,7 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PublicKey } from '@solana/web3.js'
 import { useVotingProgram } from './voting-data-access'
 import { ExplorerLink } from '../cluster/cluster-ui'
@@ -225,6 +225,22 @@ export function VotingSection({
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
 
+ const checkUserSolBalance = useCallback(async () => {
+  if (!publicKey) return
+
+  setIsChecking(true)
+  setVoteError(null)
+
+  try {
+    const { balance } = await checkSolBalance(publicKey)
+    setSolBalance(balance)
+  } catch (error) {
+    console.error('Error checking SOL balance:', error)
+    setVoteError('Failed to check SOL balance')
+  } finally {
+    setIsChecking(false)
+  }
+}, [publicKey, checkSolBalance])
   // Check SOL balance when wallet connects
   useEffect(() => {
     if (publicKey) {
@@ -232,24 +248,9 @@ export function VotingSection({
     } else {
       setSolBalance(null)
     }
-  }, [publicKey])
+  }, [publicKey, checkUserSolBalance])
 
-  const checkUserSolBalance = async () => {
-    if (!publicKey) return
-    
-    setIsChecking(true)
-    setVoteError(null)
-    try {
-      const { balance } = await checkSolBalance(publicKey)
-      setSolBalance(balance)
-    } catch (error) {
-      console.error('Error checking SOL balance:', error)
-      setVoteError('Failed to check SOL balance')
-    } finally {
-      setIsChecking(false)
-    }
-  }
-
+  
   const handleVote = async (candidateName: string) => {
     if (!publicKey) {
       toast.error('Please connect your wallet to vote')
@@ -443,7 +444,7 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
   const status = isActive ? 'Active' : now < poll.pollStart.toNumber() ? 'Not started' : 'Ended'
   const statusColor = isActive ? 'bg-green-100 text-green-800' : now < poll.pollStart.toNumber() ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
 
-  const fetchCandidates = async () => {
+  const fetchCandidates = useCallback(async () => {
     setLoading(true)
     try {
       const result = await getPollCandidates(poll.pollId.toNumber())
@@ -453,13 +454,14 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
     } finally {
       setLoading(false)
     }
-  }
-
+  }, [poll.pollId])
+  
+  // to-do implement a feature to update candidtaes
   // Function to handle updates from child components
-  const handleUpdate = () => {
-    fetchCandidates()
-    if (onUpdate) onUpdate()
-  }
+  // const handleUpdate = () => {
+  //   fetchCandidates()
+  //   if (onUpdate) onUpdate()
+  // }
 
   useEffect(() => {
     if (expanded) {
@@ -563,20 +565,13 @@ export function PollCard({ poll, publicKey, onUpdate }: { poll: any; publicKey: 
               </div>
             ) : candidates.length > 0 ? (
               <>
-                <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={handleUpdate} />
-                
-                {!hasStarted && (
-                  <div className="mt-4 pt-4 border-t border-[#143D28]">
-                    <h4 className="text-sm font-medium text-[#F5F5F5] mb-2">Add New Candidate</h4>
-                    <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={handleUpdate} />
-                  </div>
-                )}
+                <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} />
               </>
             ) : (
               <div className="text-center py-4">
                 <p className="text-[#F5F5F5]/70">No candidates found for this poll.</p>
                 {!hasStarted ? (
-                  <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={handleUpdate} />
+                  <AddCandidateForm pollId={poll.pollId.toNumber()} />
                 ) : (
                   <p className="text-sm text-red-400 mt-2">
                     Cannot add candidates after poll has started.

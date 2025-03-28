@@ -24,9 +24,9 @@ const LandingPage = () => {
   }
   
   return (
-    <div className="min-h-screen bg-[#0A1A14] text-[#F5F5F5]">
+    <div className="min-h-screen bg-[#2c5446] text-[#F5F5DC]">
       {/* Hero Section */}
-      <div className="container mx-auto pt-10 md:pt-16 relative" style={{ maxWidth: '1441px', height: '60vh', minHeight: '800px' }}>
+      <div className="container mx-auto pt-10 md:pt-16 relative" style={{ maxWidth: '1441px', height: '70vh', minHeight: '800px' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center h-full">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -34,11 +34,11 @@ const LandingPage = () => {
             transition={{ duration: 0.8 }}
             className="flex flex-col justify-center h-full"
           >
-            <h1 className="font-bold mb-6 leading-tight">
-              <div className="text-8xl md:text-9xl text-[#F5F3E6]">Voting</div>
-              <div className="text-8xl md:text-9xl text-[#F5F3E6]">Reimagined.</div>
+            <h1 className="font-courier font-bold mb-10">
+              <div className="text-8xl md:text-9xl text-[#F5F5DC]">Voting</div>
+              <div className="text-8xl md:text-9xl text-[#F5F5DC]">Reimagined.</div>
             </h1>
-            <p className="text-2xl md:text-3xl mb-8 text-[#A3E4D7] max-w-md">
+            <p className="text-2xl md:text-3xl mb-8 text-[#F5F5DC] font-courier italic max-w-md">
               Make every vote count, literally.
             </p>
             <div className="flex gap-4 items-center">
@@ -53,7 +53,6 @@ const LandingPage = () => {
               ) : (
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
                   <WalletButton />
-                  <p className="text-[#A3E4D7]/70">Connect your wallet to get started</p>
                 </div>
               )}
             </div>
@@ -195,7 +194,7 @@ const LandingPage = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            Why You'll Love It.
+            Why You&apos;ll Love It.
           </motion.h2>
           
           <div className="grid md:grid-cols-2 gap-12">
@@ -263,7 +262,7 @@ const LandingPage = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold">Tamperproof</h3>
-                    <p className="text-[#A3E4D7]/70">Once recorded, votes can't be altered or deleted</p>
+                    <p className="text-[#A3E4D7]/70">Once recorded, votes can&apos;t be altered or deleted</p>
                   </div>
                 </div>
                 
@@ -273,7 +272,7 @@ const LandingPage = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold">Permissionless</h3>
-                    <p className="text-[#A3E4D7]/70">You don't have to trust us, trust the chain</p>
+                    <p className="text-[#A3E4D7]/70">You don&apos;t have to trust us, trust the chain</p>
                   </div>
                 </div> 
                 
@@ -302,7 +301,7 @@ const LandingPage = () => {
                   <div className="p-5 flex flex-col items-center">
                     <div className="w-full h-[200px] bg-[#F5F5F5]/10 rounded-xl mb-4"></div>
                     <div className="w-full bg-[#4D63FF] p-3 rounded-xl text-white text-center mb-2">
-                      I'll Vote!
+                      I&apos;ll Vote!
                     </div>
                   </div>
                 </div>
