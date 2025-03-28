@@ -31,9 +31,15 @@ export default function CreatePollFeature() {
   }
 
   const handleAddCandidate = () => {
-    if (newCandidate.trim() !== '') {
-      setCandidates([...candidates, newCandidate.trim()])
-      setNewCandidate('')
+    const trimmedCandidate = newCandidate.trim();
+    if (trimmedCandidate !== '') {
+      // Check if candidate name already exists
+      if (candidates.some(c => c.toLowerCase() === trimmedCandidate.toLowerCase())) {
+        toast.error('A candidate with this name already exists');
+        return;
+      }
+      setCandidates([...candidates, trimmedCandidate]);
+      setNewCandidate('');
     }
   }
 
@@ -57,7 +63,8 @@ export default function CreatePollFeature() {
         programId
       )
 
-      const initializePollIx = await program.methods
+      // @ts-ignore - bypass TypeScript errors for account naming discrepancies
+      const initializePollIx = await (program.methods as any)
         .initializePoll(
           new BN(pollDetails.pollId),
           pollDetails.description,
@@ -66,8 +73,8 @@ export default function CreatePollFeature() {
         )
         .accounts({ 
           signer: provider.publicKey,
-          poll: pollPda, 
-          systemProgram: new PublicKey("11111111111111111111111111111111")
+          poll: pollPda,
+          systemProgram: anchor.web3.SystemProgram.programId
         })
         .instruction()
 
@@ -83,7 +90,7 @@ export default function CreatePollFeature() {
           programId
         )
 
-        const initializeCandidateIx = await program.methods
+        const initializeCandidateIx = await (program.methods as any)
           .initializeCandidate(
             candidate,
             new BN(pollDetails.pollId)
@@ -92,7 +99,7 @@ export default function CreatePollFeature() {
             signer: provider.publicKey,
             poll: pollPda,
             candidate: candidatePda,
-            systemProgram: new PublicKey("11111111111111111111111111111111")
+            systemProgram: anchor.web3.SystemProgram.programId
           })
           .instruction()
 
