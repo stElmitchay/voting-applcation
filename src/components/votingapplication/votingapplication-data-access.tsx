@@ -18,9 +18,9 @@ export function useVotingapplicationProgram() {
   const programId = useMemo(() => getVotingapplicationProgramId(cluster.network as Cluster), [cluster])
   const program = useMemo(() => getVotingapplicationProgram(provider, programId), [provider, programId])
 
-  const accounts = useQuery({
-    queryKey: ['votingapplication', 'all', { cluster }],
-    queryFn: () => program.account.votingapplication.all(),
+  const polls = useQuery({
+    queryKey: ['votingapplication', 'polls', { cluster }],
+    queryFn: () => program.account.poll.all(),
   })
 
   const getProgramAccount = useQuery({
@@ -34,7 +34,7 @@ export function useVotingapplicationProgram() {
       program.methods.initialize().accounts({ votingapplication: keypair.publicKey }).signers([keypair]).rpc(),
     onSuccess: (signature) => {
       transactionToast(signature)
-      return accounts.refetch()
+      return polls.refetch()
     },
     onError: () => toast.error('Failed to initialize account'),
   })
@@ -42,7 +42,7 @@ export function useVotingapplicationProgram() {
   return {
     program,
     programId,
-    accounts,
+    polls,
     getProgramAccount,
     initialize,
   }
@@ -50,12 +50,11 @@ export function useVotingapplicationProgram() {
 
 export function useVotingapplicationProgramAccount({ account }: { account: PublicKey }) {
   const { cluster } = useCluster()
-  const transactionToast = useTransactionToast()
-  const { program, accounts } = useVotingapplicationProgram()
+  const { program } = useVotingapplicationProgram()
 
-  const accountQuery = useQuery({
-    queryKey: ['votingapplication', 'fetch', { cluster, account }],
-    queryFn: () => program.account.votingapplication.fetch(account),
+  const query = useQuery({
+    queryKey: ['votingapplication', 'account', { cluster, account }],
+    queryFn: () => program.account.poll.fetch(account),
   })
 
   const closeMutation = useMutation({
@@ -63,7 +62,7 @@ export function useVotingapplicationProgramAccount({ account }: { account: Publi
     mutationFn: () => program.methods.close().accounts({ votingapplication: account }).rpc(),
     onSuccess: (tx) => {
       transactionToast(tx)
-      return accounts.refetch()
+      return query.refetch()
     },
   })
 
@@ -72,7 +71,7 @@ export function useVotingapplicationProgramAccount({ account }: { account: Publi
     mutationFn: () => program.methods.decrement().accounts({ votingapplication: account }).rpc(),
     onSuccess: (tx) => {
       transactionToast(tx)
-      return accountQuery.refetch()
+      return query.refetch()
     },
   })
 
@@ -81,7 +80,7 @@ export function useVotingapplicationProgramAccount({ account }: { account: Publi
     mutationFn: () => program.methods.increment().accounts({ votingapplication: account }).rpc(),
     onSuccess: (tx) => {
       transactionToast(tx)
-      return accountQuery.refetch()
+      return query.refetch()
     },
   })
 
@@ -90,12 +89,12 @@ export function useVotingapplicationProgramAccount({ account }: { account: Publi
     mutationFn: (value: number) => program.methods.set(value).accounts({ votingapplication: account }).rpc(),
     onSuccess: (tx) => {
       transactionToast(tx)
-      return accountQuery.refetch()
+      return query.refetch()
     },
   })
 
   return {
-    accountQuery,
+    query,
     closeMutation,
     decrementMutation,
     incrementMutation,
