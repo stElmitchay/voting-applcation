@@ -7,21 +7,24 @@ import { ExplorerLink } from '../cluster/cluster-ui'
 import { useVotingapplicationProgram, useVotingapplicationProgramAccount } from './votingapplication-data-access'
 
 export function VotingapplicationCreate() {
-  const { initialize } = useVotingapplicationProgram()
+  // const { initialize } = useVotingapplicationProgram();
+  const { program } = useVotingapplicationProgram();
 
   return (
     <button
       className="btn btn-xs lg:btn-md btn-primary"
-      onClick={() => initialize.mutateAsync(Keypair.generate())}
-      disabled={initialize.isPending}
+      // onClick={() => initialize.mutateAsync(Keypair.generate())}
+      // disabled={initialize.isPending}
+      disabled={true}
+      title="This function is not implemented yet"
     >
-      Create {initialize.isPending && '...'}
+      Create Poll
     </button>
   )
 }
 
 export function VotingapplicationList() {
-  const { accounts, getProgramAccount } = useVotingapplicationProgram()
+  const { polls, getProgramAccount } = useVotingapplicationProgram()
 
   if (getProgramAccount.isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>
@@ -35,11 +38,11 @@ export function VotingapplicationList() {
   }
   return (
     <div className={'space-y-6'}>
-      {accounts.isLoading ? (
+      {polls.isLoading ? (
         <span className="loading loading-spinner loading-lg"></span>
-      ) : accounts.data?.length ? (
+      ) : polls.data?.length ? (
         <div className="grid md:grid-cols-2 gap-4">
-          {accounts.data?.map((account) => (
+          {polls.data?.map((account) => (
             <VotingapplicationCard key={account.publicKey.toString()} account={account.publicKey} />
           ))}
         </div>
@@ -54,66 +57,34 @@ export function VotingapplicationList() {
 }
 
 function VotingapplicationCard({ account }: { account: PublicKey }) {
-  const { accountQuery, incrementMutation, setMutation, decrementMutation, closeMutation } = useVotingapplicationProgramAccount({
+  const { query } = useVotingapplicationProgramAccount({
     account,
-  })
+  });
 
-  const count = useMemo(() => accountQuery.data?.count ?? 0, [accountQuery.data?.count])
+  // We no longer have these mutations as they were commented out
+  /* const { accountQuery, incrementMutation, setMutation, decrementMutation, closeMutation } = useVotingapplicationProgramAccount({
+    account,
+  }) */
 
-  return accountQuery.isLoading ? (
+  // Use data from the poll instead
+  const pollData = query.data;
+
+  return query.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
   ) : (
     <div className="card card-bordered border-base-300 border-4 text-neutral-content">
       <div className="card-body items-center text-center">
         <div className="space-y-6">
-          <h2 className="card-title justify-center text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
-            {count}
+          <h2 className="card-title justify-center text-xl cursor-pointer" onClick={() => query.refetch()}>
+            Poll #{pollData?.pollId.toString() || 'Unknown'}
           </h2>
-          <div className="card-actions justify-around">
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => incrementMutation.mutateAsync()}
-              disabled={incrementMutation.isPending}
-            >
-              Increment
-            </button>
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => {
-                const value = window.prompt('Set value to:', count.toString() ?? '0')
-                if (!value || parseInt(value) === count || isNaN(parseInt(value))) {
-                  return
-                }
-                return setMutation.mutateAsync(parseInt(value))
-              }}
-              disabled={setMutation.isPending}
-            >
-              Set
-            </button>
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => decrementMutation.mutateAsync()}
-              disabled={decrementMutation.isPending}
-            >
-              Decrement
-            </button>
-          </div>
+          <p>{pollData?.description || 'No description'}</p>
+          
           <div className="text-center space-y-4">
             <p>
               <ExplorerLink path={`account/${account}`} label={ellipsify(account.toString())} />
             </p>
-            <button
-              className="btn btn-xs btn-secondary btn-outline"
-              onClick={() => {
-                if (!window.confirm('Are you sure you want to close this account?')) {
-                  return
-                }
-                return closeMutation.mutateAsync()
-              }}
-              disabled={closeMutation.isPending}
-            >
-              Close
-            </button>
+            <p>Candidates: {pollData?.candidateAmount.toString() || '0'}</p>
           </div>
         </div>
       </div>

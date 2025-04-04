@@ -54,9 +54,33 @@ export function useVotingProgram() {
   // Function to hide a poll
   const hidePoll = (pollId: number) => {
     const hiddenPolls = getHiddenPolls()
-    hiddenPolls.push(pollId)
-    localStorage.setItem('hiddenPolls', JSON.stringify(hiddenPolls))
+    if (!hiddenPolls.includes(pollId)) {
+      hiddenPolls.push(pollId)
+      localStorage.setItem('hiddenPolls', JSON.stringify(hiddenPolls))
+    }
   }
+
+  // Function to unhide a poll
+  const unhidePoll = (pollId: number) => {
+    const hiddenPolls = getHiddenPolls()
+    const updatedHiddenPolls = hiddenPolls.filter((id: number) => id !== pollId)
+    localStorage.setItem('hiddenPolls', JSON.stringify(updatedHiddenPolls))
+  }
+
+  // Function to get all hidden polls
+  const getHiddenPollsData = useQuery({
+    queryKey: ['voting', 'hiddenPolls', { cluster }],
+    queryFn: async () => {
+      try {
+        const accounts = await program.account.poll.all()
+        const hiddenPolls = getHiddenPolls()
+        return accounts.filter(account => hiddenPolls.includes(account.account.pollId.toNumber()))
+      } catch (error) {
+        console.error('Error fetching hidden polls:', error)
+        return []
+      }
+    },
+  })
 
   // Query all polls (excluding hidden ones)
   const polls = useQuery({
@@ -202,8 +226,7 @@ export function useVotingProgram() {
         .accounts({ 
           signer: provider.publicKey,
           poll: pollPda,
-          candidate: candidatePda,
-          systemProgram: new PublicKey("11111111111111111111111111111111")
+          candidate: candidatePda
         })
         .rpc()
     },
@@ -265,8 +288,7 @@ export function useVotingProgram() {
         .accounts({ 
           signer: provider.publicKey,
           poll: pollPda,
-          candidate: candidatePda,
-          systemProgram: new PublicKey("11111111111111111111111111111111")
+          candidate: candidatePda
         })
         .rpc()
     },
@@ -292,6 +314,8 @@ export function useVotingProgram() {
     vote,
     getPollCandidates,
     checkSolBalance,
-    REQUIRED_SOL_AMOUNT
+    REQUIRED_SOL_AMOUNT,
+    unhidePoll,
+    getHiddenPollsData
   }
 } 

@@ -24,6 +24,7 @@ export default function CreatePollFeature() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const provider = useAnchorProvider()
   const programId = getVotingapplicationProgramId('devnet')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handlePollCreated = (details: any) => {
     setPollDetails(details)
@@ -53,6 +54,8 @@ export default function CreatePollFeature() {
     if (candidates.length < 2 || !pollDetails) return
     
     setIsSubmitting(true)
+    setErrorMessage(null)
+    
     try {
       // Create a transaction builder
       const tx = new anchor.web3.Transaction()
@@ -63,20 +66,20 @@ export default function CreatePollFeature() {
         programId
       )
 
-      // @ts-ignore - bypass TypeScript errors for account naming discrepancies
-      const initializePollIx = await (program.methods as any)
+      // Initialize poll
+      const initializePollIx = await (program.methods
         .initializePoll(
           new BN(pollDetails.pollId),
           pollDetails.description,
           new BN(pollDetails.pollStart),
           new BN(pollDetails.pollEnd)
         )
-        .accounts({ 
+        .accounts({
           signer: provider.publicKey,
           poll: pollPda,
           systemProgram: anchor.web3.SystemProgram.programId
-        })
-        .instruction()
+        } as any)
+        .instruction())
 
       tx.add(initializePollIx)
 
@@ -90,18 +93,18 @@ export default function CreatePollFeature() {
           programId
         )
 
-        const initializeCandidateIx = await (program.methods as any)
+        const initializeCandidateIx = await (program.methods
           .initializeCandidate(
             candidate,
             new BN(pollDetails.pollId)
           )
-          .accounts({ 
+          .accounts({
             signer: provider.publicKey,
             poll: pollPda,
             candidate: candidatePda,
             systemProgram: anchor.web3.SystemProgram.programId
-          })
-          .instruction()
+          } as any)
+          .instruction())
 
         tx.add(initializeCandidateIx)
       }
@@ -113,8 +116,18 @@ export default function CreatePollFeature() {
       router.push('/voting')
     } catch (error) {
       console.error('Error creating poll:', error)
+      
+      // Check for account already in use error
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to create poll: ${errorMessage}`);
+      if (errorMessage.includes('already in use')) {
+        // Generate a suggested new ID
+        const suggestedId = pollDetails.pollId + Math.floor(Math.random() * 1000) + 1;
+        setErrorMessage(`This poll ID (${pollDetails.pollId}) is already taken. Please go back and try using a different ID, such as ${suggestedId}.`);
+      } else {
+        setErrorMessage(`Failed to create poll: ${errorMessage}`);
+      }
+      
+      toast.error(`Failed to create poll: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`);
     } finally {
       setIsSubmitting(false)
     }
@@ -122,24 +135,24 @@ export default function CreatePollFeature() {
 
   if (!publicKey) {
     return (
-      <div className="min-h-screen bg-[#0A1A14] flex items-center justify-center">
+      <div className="min-h-screen bg-[#2c5446] flex items-center justify-center">
         <div className="max-w-md px-6">
-          <div className="bg-[#0A1A14] rounded-xl border border-[#143D28] overflow-hidden">
+          <div className="bg-[#3a6b5a] rounded-xl border border-[#2c5446] overflow-hidden">
             <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-[#A3E4D7] rounded-full flex items-center justify-center mx-auto mb-5">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-5">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#0A1A14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-[#F5F5F5] mb-3">Create a New Poll</h1>
-              <div className="w-16 h-0.5 bg-[#143D28] mx-auto mb-5"></div>
-              <p className="text-[#A3E4D7] mb-8 px-4">
+              <h1 className="text-2xl font-bold text-[#F5F5DC] mb-3">Create a New Poll</h1>
+              <div className="w-16 h-0.5 bg-[#2c5446] mx-auto mb-5"></div>
+              <p className="text-[#F5F5DC] mb-8 px-4">
                 Connect your wallet to create a new poll on the Solana blockchain.
               </p>
               <div className="mb-3">
                 <WalletButton />
               </div>
-              <p className="text-sm text-[#A3E4D7]/70">
+              <p className="text-sm text-[#F5F5DC]/70">
                 Connect your wallet to get started
               </p>
             </div>
@@ -150,19 +163,19 @@ export default function CreatePollFeature() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A1A14] py-12">
+    <div className="min-h-screen bg-[#2c5446] py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-[#A3E4D7] rounded-full flex items-center justify-center mr-3">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0A1A14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-[#F5F5F5]">Create a New Poll</h1>
+              <h1 className="text-3xl font-bold text-[#F5F5DC]">Create a New Poll</h1>
             </div>
-            <div className="text-sm font-medium text-[#A3E4D7] flex items-center">
+            <div className="text-sm font-medium text-[#F5F5DC] flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
@@ -170,17 +183,17 @@ export default function CreatePollFeature() {
             </div>
           </div>
           <div className="mt-4 relative">
-            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-[#143D28]">
+            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-[#2c5446]">
               <div style={{ width: `${stage * 50}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-[#0A1A14] justify-center bg-[#A3E4D7] transition-all duration-500"></div>
             </div>
             <div className="flex justify-between">
-              <div className={`text-sm flex items-center ${stage >= 1 ? 'font-medium text-[#A3E4D7]' : 'text-[#F5F5F5]/50'}`}>
+              <div className={`text-sm flex items-center ${stage >= 1 ? 'font-medium text-[#F5F5DC]' : 'text-[#F5F5DC]/50'}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 Poll Details
               </div>
-              <div className={`text-sm flex items-center ${stage >= 2 ? 'font-medium text-[#A3E4D7]' : 'text-[#F5F5F5]/50'}`}>
+              <div className={`text-sm flex items-center ${stage >= 2 ? 'font-medium text-[#F5F5DC]' : 'text-[#F5F5DC]/50'}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -190,116 +203,116 @@ export default function CreatePollFeature() {
           </div>
         </div>
 
-        <div className="bg-[#0A1A14] border border-[#143D28] overflow-hidden rounded-lg">
+        <div className="bg-[#3a6b5a] border border-[#2c5446] overflow-hidden rounded-lg">
           {stage === 1 && (
             <div className="px-4 py-5 sm:p-6">
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-[#A3E4D7] rounded-full flex items-center justify-center mr-3">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0A1A14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-medium text-[#F5F5F5]">Enter Poll Details</h2>
+                <h2 className="text-xl font-semibold text-[#F5F5DC]">Poll Details</h2>
               </div>
-              <div className="space-y-5">
-                <CreatePollForm onPollCreated={handlePollCreated} />
-              </div>
+              <CreatePollForm onPollCreated={handlePollCreated} />
             </div>
           )}
 
           {stage === 2 && (
             <div className="px-4 py-5 sm:p-6">
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-[#A3E4D7] rounded-full flex items-center justify-center mr-3">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0A1A14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-medium text-[#F5F5F5]">Add Candidates</h2>
-              </div>
-              <p className="text-sm text-[#A3E4D7]/70 mb-4">
-                Add at least two candidates to your poll. Voters will be able to choose between these options.
-              </p>
-
-              <div className="mb-6 flex">
-                <input
-                  type="text"
-                  placeholder="Enter candidate name"
-                  className="flex-grow px-4 py-2.5 bg-[#0A1A14] border border-[#143D28] rounded-l-lg text-[#F5F5F5] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#A3E4D7]/50"
-                  value={newCandidate}
-                  onChange={(e) => setNewCandidate(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddCandidate()}
-                />
-                <button
-                  onClick={handleAddCandidate}
-                  className="px-4 py-2.5 bg-[#143D28] text-[#F5F5F5] text-sm font-medium rounded-r-lg hover:bg-[#1e5438] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 flex items-center"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Add
-                </button>
+                <h2 className="text-xl font-semibold text-[#F5F5DC]">Add Candidates</h2>
               </div>
 
-              <div className="space-y-2 mb-6">
+              <div className="bg-[#2c5446]/20 border border-[#2c5446] text-[#F5F5DC] px-4 py-3 rounded-lg text-sm mb-6">
+                <p className="font-medium mb-1">Important Notice:</p>
+                <p>Add at least two candidates to your poll. You cannot add or remove candidates after the poll starts.</p>
+              </div>
+
+              {errorMessage && (
+                <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm mb-4">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="flex">
+                  <input
+                    type="text"
+                    placeholder="Enter candidate name"
+                    className="flex-grow px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-l-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#F5F5DC]/50"
+                    value={newCandidate}
+                    onChange={(e) => setNewCandidate(e.target.value)}
+                  />
+                  <button
+                    onClick={handleAddCandidate}
+                    className="px-4 py-2.5 bg-white text-[#0A1A14] text-sm font-medium rounded-r-lg hover:bg-[#A3E4D7] hover:text-[#0A1A14] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Add
+                  </button>
+                </div>
+
                 {candidates.length > 0 ? (
-                  candidates.map((candidate, index) => (
-                    <div key={index} className="flex items-center justify-between bg-[#0A1A14] border border-[#143D28] p-3 rounded-lg">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-[#143D28] flex items-center justify-center">
-                          <span className="text-sm font-medium text-[#F5F5F5]">{index + 1}</span>
-                        </div>
-                        <span className="ml-3 text-sm font-medium text-[#F5F5F5]">{candidate}</span>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveCandidate(index)}
-                        className="text-[#F5F5F5]/70 hover:text-red-500"
-                      >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))
+                  <div className="bg-[#2c5446] border border-[#2c5446] rounded-lg p-4">
+                    <h3 className="text-[#F5F5DC] text-sm font-medium mb-3">Candidates ({candidates.length})</h3>
+                    <ul className="space-y-2">
+                      {candidates.map((candidate, index) => (
+                        <li key={index} className="flex justify-between items-center p-3 bg-[#2c5446] text-[#F5F5DC] rounded-lg border border-[#2c5446]">
+                          <div className="flex items-center">
+                            <div className="w-6 h-6 bg-white text-[#0A1A14] rounded-full flex items-center justify-center font-medium text-sm mr-3">
+                              {index + 1}
+                            </div>
+                            <span>{candidate}</span>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveCandidate(index)}
+                            className="text-[#F5F5DC]/70 hover:text-red-400 p-1 rounded"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : (
-                  <div className="text-center py-4 text-[#F5F5F5]/50">
-                    No candidates added yet. Add at least two candidates to create a poll.
+                  <div className="bg-[#2c5446] border border-[#2c5446] text-[#F5F5DC]/70 rounded-lg py-8 px-4 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-[#F5F5DC]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <p>No candidates added yet. Add at least two candidates.</p>
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-between">
+              <div className="mt-8 flex items-center justify-between">
                 <button
-                  onClick={() => setStage(1)}
-                  className="px-4 py-2 border border-[#143D28] text-sm font-medium rounded-md text-[#F5F5F5] bg-[#0A1A14] hover:bg-[#143D28] focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 flex items-center"
-                  disabled={isSubmitting}
+                  onClick={() => {
+                    setStage(1);
+                    setErrorMessage(null);
+                  }}
+                  className="px-5 py-2.5 bg-transparent text-[#F5F5DC] border border-[#2c5446] text-sm font-medium rounded-lg hover:bg-[#2c5446] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#A3E4D7]"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
                   Back
                 </button>
                 <button
                   onClick={handleFinish}
+                  className="px-5 py-2.5 bg-white text-[#0A1A14] text-sm font-medium rounded-lg hover:bg-[#A3E4D7] hover:text-[#0A1A14] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#A3E4D7] disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={candidates.length < 2 || isSubmitting}
-                  className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
-                    candidates.length < 2 || isSubmitting
-                      ? 'bg-[#143D28]/50 text-[#F5F5F5]/50 cursor-not-allowed'
-                      : 'bg-[#143D28] text-[#F5F5F5] hover:bg-[#1e5438] focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2'
-                  }`}
                 >
                   {isSubmitting ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#F5F5F5] rounded-full"></div>
-                      <span>Creating...</span>
+                    <div className="flex items-center">
+                      <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#0A1A14] rounded-full"></div>
+                      <span>Creating Poll...</span>
                     </div>
                   ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Create Poll
-                    </>
+                    'Create Poll'
                   )}
                 </button>
               </div>

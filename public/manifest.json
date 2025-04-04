@@ -4,8 +4,8 @@
   "description": "Create and participate in polls on the Solana blockchain",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A1A14",
-  "theme_color": "#0A1A14",
+  "background_color": "#2c5446",
+  "theme_color": "#2c5446",
   "icons": [
     {
       "src": "/favicon.svg",

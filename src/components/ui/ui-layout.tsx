@@ -15,7 +15,7 @@ export function UiLayout({ children, links }: { children: ReactNode; links: { la
 
   return (
     <div className="h-full flex flex-col bg-[#0A1A14]">
-      <div className="bg-[#0A1A14] shadow-md">
+      <div className="bg-[#2c5446] shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
@@ -73,7 +73,7 @@ export function UiLayout({ children, links }: { children: ReactNode; links: { la
         </Suspense>
         <Toaster position="bottom-right" />
       </div>
-      <footer className="bg-[#0A1A14] border-t border-[#143D28] py-4">
+      <footer className="bg-[#2c5446] border-t border-[#143D28] py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-[#F5F5F5]/70">
             Utopia - Decentralized Voting Platform - Built with{' '}
@@ -88,6 +88,8 @@ export function UiLayout({ children, links }: { children: ReactNode; links: { la
           </p>
         </div>
       </footer>
+
+      
     </div>
   )
 }

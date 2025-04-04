@@ -71,14 +71,14 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="absolute top-[40%] right-[15%] w-[220px] h-[220px] rounded-full bg-[#2C5B4C]/80 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute top-[10%] right-[15%] w-[220px] h-[220px] rounded-full bg-[#2C5B4C]/80 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
                 <div className="text-4xl mb-1">⚡</div>
                 <div className="text-sm">Fast</div>
               </div>
             </div>
             
-            <div className="absolute bottom-[20%] left-[25%] w-[250px] h-[250px] rounded-full bg-[#143D28]/70 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute bottom-[10%] left-[25%] w-[250px] h-[250px] rounded-full bg-[#143D28]/70 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
                 <div className="text-4xl mb-1">🔐</div>
                 <div className="text-sm">Transparent</div>
@@ -117,8 +117,168 @@ const LandingPage = () => {
         </div>
       </div>
       
-      {/* How It Works Section */}
-      <section id="how-it-works" className="container mx-auto px-6 py-24">
+
+      {/* Why You'll Love It Section */}
+      <section className="container mx-auto px-6 py-24 bg-[#2c5446]">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2 
+            className="text-5xl font-bold mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            Why You&apos;ll Love It.
+          </motion.h2>
+          
+          <div className="grid md:grid-cols-2 gap-12">
+            {[
+              {
+                icon: "⚡",
+                title: "Speed matters",
+                description: "Solana confirms transactions in seconds, making voting quick and efficient for everyone involved."
+              },
+              {
+                icon: "🔒",
+                title: "Trustless by design",
+                description: "Every vote is public, secure, and verifiable on the blockchain. No more questioning if your vote was counted."
+              },
+              {
+                icon: "📈",
+                title: "Built to scale",
+                description: "Whether it's 10 voters or 10,000, our platform handles it without breaking a sweat or compromising security."
+              },
+              {
+                icon: "🧭",
+                title: "Simple to use",
+                description: "Create a poll in seconds. The user-friendly interface guides you through the process with minimal steps required."
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                className="flex gap-6"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.15 }}
+              >
+                <div className="text-5xl">{feature.icon}</div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
+                  <p className="text-[#A3E4D7]/70 text-lg">{feature.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Blockchain Section */}
+      <section className="container mx-auto px-6 py-24 bg-[#2c5446]">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-5xl font-bold mb-6">Why Blockchain?</h2>
+              <p className="text-xl mb-10 text-[#F5F5F5]/80">
+                Traditional voting systems often rely on blind trust. With blockchain, 
+                transparency is built in. Every vote is traceable, timestamped, and immutable.
+              </p>
+              
+              <div className="flex flex-col gap-6">
+                <div className="flex gap-4 items-center bg-[#143D28]/70 backdrop-blur-md p-6 rounded-xl">
+                  <div className="bg-[#A3E4D7]/80 text-[#0A1A14] w-16 h-16 flex items-center justify-center rounded-xl text-2xl font-bold">
+                    Free
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Tamperproof</h3>
+                    <p className="text-[#A3E4D7]/70">Once recorded, votes can&apos;t be altered or deleted</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 items-center bg-[#2C5B4C]/80 backdrop-blur-md p-6 rounded-xl">
+                  <div className="bg-[#2C5B4C] text-white w-16 h-16 flex items-center justify-center rounded-xl text-2xl font-bold">
+                    24h
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Permissionless</h3>
+                    <p className="text-[#A3E4D7]/70">You don&apos;t have to trust us, trust the chain</p>
+                  </div>
+                </div> 
+                
+                <div className="flex gap-4 items-center bg-[#A3E4D7]/30 backdrop-blur-md p-6 rounded-xl">
+                  <div className="bg-[#0A1A14] text-[#A3E4D7] w-16 h-16 flex items-center justify-center rounded-xl text-2xl font-bold">
+                    500K
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Decentralised</h3>
+                    <p className="text-[#A3E4D7]/70">No central authority</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              className="relative h-[500px] flex items-center justify-center"
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
+              <div className="relative w-full h-full">
+                <div className="absolute top-[10%] right-[10%] w-[220px] h-[400px] bg-[#3751FF] rounded-3xl overflow-hidden transform rotate-6 shadow-xl">
+                  <div className="bg-[#2C3FD9] p-3 text-white text-sm font-bold">Poll Vote</div>
+                  <div className="p-5 flex flex-col items-center">
+                    <div className="w-full h-[200px] bg-[#F5F5F5]/10 rounded-xl mb-4 overflow-hidden">
+                      <Image 
+                        src="/images/vote-illustration.png" 
+                        alt="Voting illustration" 
+                        width={220} 
+                        height={200} 
+                        className="object-cover w-full h-full"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?q=80&w=2574&auto=format&fit=crop";
+                        }}
+                      />
+                    </div>
+                    <div className="w-full bg-[#4D63FF] p-3 rounded-xl text-white text-center mb-2">
+                      I&apos;ll Vote!
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="absolute top-[25%] left-[5%] w-[220px] h-[400px] bg-[#3751FF] rounded-3xl overflow-hidden transform -rotate-3 shadow-xl z-10">
+                  <div className="bg-[#2C3FD9] p-3 text-white text-sm font-bold">Your Poll</div>
+                  <div className="p-5 flex flex-col items-center">
+                    <div className="w-full h-[200px] bg-[#F5F5F5]/10 rounded-xl mb-4 overflow-hidden">
+                      <Image 
+                        src="/images/create-poll-illustration.png" 
+                        alt="Create poll illustration" 
+                        width={220} 
+                        height={200} 
+                        className="object-cover w-full h-full"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1614332287897-cdc485fa562d?q=80&w=2670&auto=format&fit=crop";
+                        }}
+                      />
+                    </div>
+                    <div className="w-full bg-[#4D63FF] p-3 rounded-xl text-white text-center mb-2">
+                      Create Poll
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+       {/* How It Works Section */}
+       <section id="how-it-works" className="container mx-auto px-6 py-24">
         <div className="max-w-6xl mx-auto">
           <motion.h2 
             className="text-5xl font-bold mb-16"
@@ -184,145 +344,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Why You'll Love It Section */}
-      <section className="container mx-auto px-6 py-24 bg-[#0A1A14]">
-        <div className="max-w-6xl mx-auto">
-          <motion.h2 
-            className="text-5xl font-bold mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            Why You&apos;ll Love It.
-          </motion.h2>
-          
-          <div className="grid md:grid-cols-2 gap-12">
-            {[
-              {
-                icon: "⚡",
-                title: "Speed matters",
-                description: "Solana confirms transactions in seconds, making voting quick and efficient for everyone involved."
-              },
-              {
-                icon: "🔒",
-                title: "Trustless by design",
-                description: "Every vote is public, secure, and verifiable on the blockchain. No more questioning if your vote was counted."
-              },
-              {
-                icon: "📈",
-                title: "Built to scale",
-                description: "Whether it's 10 voters or 10,000, our platform handles it without breaking a sweat or compromising security."
-              },
-              {
-                icon: "🧭",
-                title: "Simple to use",
-                description: "Create a poll in seconds. The user-friendly interface guides you through the process with minimal steps required."
-              }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                className="flex gap-6"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.15 }}
-              >
-                <div className="text-5xl">{feature.icon}</div>
-                <div>
-                  <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
-                  <p className="text-[#A3E4D7]/70 text-lg">{feature.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why Blockchain Section */}
-      <section className="container mx-auto px-6 py-24 bg-[#0A1A14]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-5xl font-bold mb-6">Why Blockchain?</h2>
-              <p className="text-xl mb-10 text-[#F5F5F5]/80">
-                Traditional voting systems often rely on blind trust. With blockchain, 
-                transparency is built in. Every vote is traceable, timestamped, and immutable.
-              </p>
-              
-              <div className="flex flex-col gap-6">
-                <div className="flex gap-4 items-center bg-[#143D28]/70 backdrop-blur-md p-6 rounded-xl">
-                  <div className="bg-[#A3E4D7]/80 text-[#0A1A14] w-16 h-16 flex items-center justify-center rounded-xl text-2xl font-bold">
-                    Free
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Tamperproof</h3>
-                    <p className="text-[#A3E4D7]/70">Once recorded, votes can&apos;t be altered or deleted</p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-4 items-center bg-[#2C5B4C]/80 backdrop-blur-md p-6 rounded-xl">
-                  <div className="bg-[#2C5B4C] text-white w-16 h-16 flex items-center justify-center rounded-xl text-2xl font-bold">
-                    24h
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Permissionless</h3>
-                    <p className="text-[#A3E4D7]/70">You don&apos;t have to trust us, trust the chain</p>
-                  </div>
-                </div> 
-                
-                <div className="flex gap-4 items-center bg-[#A3E4D7]/30 backdrop-blur-md p-6 rounded-xl">
-                  <div className="bg-[#0A1A14] text-[#A3E4D7] w-16 h-16 flex items-center justify-center rounded-xl text-2xl font-bold">
-                    500K
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Decentralised</h3>
-                    <p className="text-[#A3E4D7]/70">No central authority</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              className="relative h-[500px] flex items-center justify-center"
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-            >
-              <div className="relative w-full h-full">
-                <div className="absolute top-[10%] right-[10%] w-[220px] h-[400px] bg-[#3751FF] rounded-3xl overflow-hidden transform rotate-6 shadow-xl">
-                  <div className="bg-[#2C3FD9] p-3 text-white text-sm font-bold">Poll Vote</div>
-                  <div className="p-5 flex flex-col items-center">
-                    <div className="w-full h-[200px] bg-[#F5F5F5]/10 rounded-xl mb-4"></div>
-                    <div className="w-full bg-[#4D63FF] p-3 rounded-xl text-white text-center mb-2">
-                      I&apos;ll Vote!
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="absolute top-[25%] left-[5%] w-[220px] h-[400px] bg-[#3751FF] rounded-3xl overflow-hidden transform -rotate-3 shadow-xl z-10">
-                  <div className="bg-[#2C3FD9] p-3 text-white text-sm font-bold">Your Poll</div>
-                  <div className="p-5 flex flex-col items-center">
-                    <div className="w-full h-[200px] bg-[#F5F5F5]/10 rounded-xl mb-4"></div>
-                    <div className="w-full bg-[#4D63FF] p-3 rounded-xl text-white text-center mb-2">
-                      Create Poll
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Use Cases Section */}
-      <section className="container mx-auto px-6 py-24 bg-[#0A1A14]">
+      <section className="container mx-auto px-6 py-24 bg-[#2c5446]">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div
@@ -456,7 +479,7 @@ const LandingPage = () => {
       </section>
 
       {/* Call to Action Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
+      <section className="container mx-auto px-4 py-16 text-center " style={{ maxWidth: '1441px', minHeight: '0px' }}>
         <motion.div
           initial={fadeIn.initial}
           whileInView={fadeIn.animate}
@@ -472,18 +495,11 @@ const LandingPage = () => {
             >
               🚀 Get Started
             </motion.button>
-            <motion.button
-              whileHover={cardHover}
-              onClick={() => router.push('/demo')}
-              className="btn bg-[#A3E4D7] text-[#1A3C34] hover:bg-[#8CD0C3]"
-            >
-              👁 View Live Demo
-            </motion.button>
           </div>
         </motion.div>
       </section>
 
-      {/* Footer Section */}
+      {/* Footer Section
       <footer className="bg-[#234D44] py-8">
         <div className="container mx-auto px-4">
           <div className="flex justify-center gap-8">
@@ -505,7 +521,7 @@ const LandingPage = () => {
             ))}
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   )
 } 

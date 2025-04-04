@@ -32,9 +32,12 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
     console.error(error)
   }, [])
 
+  // Enable wallet auto-connection
+  const wallets = useMemo(() => [], []);
+
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={[]} onError={onError} autoConnect={true}>
+      <WalletProvider wallets={wallets} onError={onError} autoConnect={true}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

@@ -28,6 +28,8 @@ export function useVotingapplicationProgram() {
     queryFn: () => connection.getParsedAccountInfo(programId),
   })
 
+  // This method doesn't exist in the IDL
+  /* 
   const initialize = useMutation({
     mutationKey: ['votingapplication', 'initialize', { cluster }],
     mutationFn: (keypair: Keypair) =>
@@ -38,13 +40,14 @@ export function useVotingapplicationProgram() {
     },
     onError: () => toast.error('Failed to initialize account'),
   })
+  */
 
   return {
     program,
     programId,
     polls,
     getProgramAccount,
-    initialize,
+    // initialize,
   }
 }
 
@@ -57,6 +60,7 @@ export function useVotingapplicationProgramAccount({ account }: { account: Publi
     queryFn: () => program.account.poll.fetch(account),
   })
 
+  /* These methods don't exist in the IDL
   const closeMutation = useMutation({
     mutationKey: ['votingapplication', 'close', { cluster, account }],
     mutationFn: () => program.methods.close().accounts({ votingapplication: account }).rpc(),
@@ -92,12 +96,15 @@ export function useVotingapplicationProgramAccount({ account }: { account: Publi
       return query.refetch()
     },
   })
+  */
 
   return {
     query,
+    /* 
     closeMutation,
     decrementMutation,
     incrementMutation,
     setMutation,
+    */
   }
 }

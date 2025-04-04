@@ -17,7 +17,7 @@ export const metadata = {
     ]
   },
   manifest: '/manifest.json',
-  themeColor: '#0A1A14',
+  themeColor: '#2c5446',
   viewport: 'width=device-width, initial-scale=1',
   appleWebApp: {
     capable: true,
