@@ -9,8 +9,8 @@ import { useState } from 'react'
 
 export function VotingFeature() {
   const { publicKey } = useWallet()
-  // Comment out activeTab state since we're removing the tabs
-  // const [activeTab, setActiveTab] = useState<'active' | 'hidden'>('active')
+  // Add filter state
+  const [filter, setFilter] = useState<'active' | 'future' | 'past'>('active')
 
   return (
     <div className="min-h-screen bg-[#2c5446] py-12">
@@ -51,34 +51,29 @@ export function VotingFeature() {
                   </div>
                 )}
                 
-                {/* Comment out Tabs
-                <div className="flex border-b border-[#F5F5DC]/20 mb-4">
-                  <button
-                    className={`py-2 px-4 font-medium text-sm mr-2 rounded-t-lg ${
-                      activeTab === 'active'
-                        ? 'bg-[#3a6b5a] text-[#F5F5DC] border-b-2 border-[#A3E4D7]'
-                        : 'text-[#F5F5DC]/70 hover:text-[#F5F5DC]'
-                    }`}
-                    onClick={() => setActiveTab('active')}
-                  >
-                    Active Polls
-                  </button>
-                  <button
-                    className={`py-2 px-4 font-medium text-sm rounded-t-lg ${
-                      activeTab === 'hidden'
-                        ? 'bg-[#3a6b5a] text-[#F5F5DC] border-b-2 border-[#A3E4D7]'
-                        : 'text-[#F5F5DC]/70 hover:text-[#F5F5DC]'
-                    }`}
-                    onClick={() => setActiveTab('hidden')}
-                  >
-                    Hidden Polls
-                  </button>
+                {/* Add filter dropdown */}
+                <div className="flex justify-end mb-4">
+                  <div className="relative">
+                    <select
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value as 'active' | 'future' | 'past')}
+                      className="appearance-none bg-[#3a6b5a] border border-[#F5F5DC]/20 text-[#F5F5DC] py-2 px-4 pr-8 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent"
+                    >
+                      <option value="active">Active Polls</option>
+                      <option value="future">Future Polls</option>
+                      <option value="past">Past Polls</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#F5F5DC]">
+                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-                */}
 
                 <div className="mt-4">
-                  {/* Always show active polls */}
-                  <PollsList />
+                  {/* Pass filter to PollsList */}
+                  <PollsList filter={filter} />
                 </div>
               </div>
             </div>
@@ -99,18 +94,14 @@ export function VotingFeature() {
                 <p>
                   Our decentralized voting platform leverages Solana blockchain technology to provide secure, transparent, and efficient voting experiences.
                 </p>
-                
-                <div className="bg-[#3a6b5a] p-4 rounded-lg">
-                  <h3 className="font-medium mb-2 text-[#F5F5DC]">Features:</h3>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>Secure voting with blockchain validation</li>
-                    <li>Real-time results and transparent vote counting</li>
-                    <li>Customizable poll parameters and end dates</li>
-                    {/* Comment out reference to hiding polls */}
-                    {/* <li>Option to hide polls you're not interested in</li> */}
-                  </ul>
-                </div>
-
+                <p>
+                  <strong>Features:</strong>
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Secure voting with blockchain validation</li>
+                  <li>Real-time results and transparent vote counting</li>
+                  <li>Customizable poll parameters and end dates</li>
+                </ul>
                 <p>
                   Connect your wallet to create polls, vote, and participate in the community.
                 </p>

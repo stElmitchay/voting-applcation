@@ -14,6 +14,7 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { ReactNode, useCallback, useMemo } from 'react'
 import { useCluster } from '../cluster/cluster-data-access'
 import { CustomWalletButton } from './wallet-button'
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
 
 require('@solana/wallet-adapter-react-ui/styles.css')
 
@@ -32,8 +33,11 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
     console.error(error)
   }, [])
 
-  // Enable wallet auto-connection
-  const wallets = useMemo(() => [], []);
+  // Add wallet adapters for persistence
+  const wallets = useMemo(() => [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+  ], []);
 
   return (
     <ConnectionProvider endpoint={endpoint}>

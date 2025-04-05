@@ -51,6 +51,12 @@ export function useVotingProgram() {
     return hiddenPolls ? JSON.parse(hiddenPolls) : []
   }
 
+  // Function to get active polls from localStorage
+  const getActivePolls = () => {
+    const activePolls = localStorage.getItem('activePolls')
+    return activePolls ? JSON.parse(activePolls) : []
+  }
+
   // Function to hide a poll
   const hidePoll = (pollId: number) => {
     const hiddenPolls = getHiddenPolls()
@@ -65,6 +71,25 @@ export function useVotingProgram() {
     const hiddenPolls = getHiddenPolls()
     const updatedHiddenPolls = hiddenPolls.filter((id: number) => id !== pollId)
     localStorage.setItem('hiddenPolls', JSON.stringify(updatedHiddenPolls))
+  }
+
+  // Function to set a poll as active
+  const setPollActive = (pollId: number, isActive: boolean) => {
+    const activePolls = getActivePolls()
+    if (isActive && !activePolls.includes(pollId)) {
+      activePolls.push(pollId)
+    } else if (!isActive) {
+      const updatedActivePolls = activePolls.filter((id: number) => id !== pollId)
+      localStorage.setItem('activePolls', JSON.stringify(updatedActivePolls))
+      return
+    }
+    localStorage.setItem('activePolls', JSON.stringify(activePolls))
+  }
+
+  // Function to check if a poll is active
+  const isPollActive = (pollId: number) => {
+    const activePolls = getActivePolls()
+    return activePolls.includes(pollId)
   }
 
   // Function to get all hidden polls
@@ -89,7 +114,11 @@ export function useVotingProgram() {
       try {
         const accounts = await program.account.poll.all()
         const hiddenPolls = getHiddenPolls()
-        return accounts.filter(account => !hiddenPolls.includes(account.account.pollId.toNumber()))
+        
+        // Return all polls except hidden ones
+        return accounts.filter(account => 
+          !hiddenPolls.includes(account.account.pollId.toNumber())
+        )
       } catch (error) {
         console.error('Error fetching polls:', error)
         return []
@@ -100,19 +129,35 @@ export function useVotingProgram() {
   // Initialize a new poll
   const initializePoll = useMutation({
     mutationKey: ['voting', 'initializePoll', { cluster }],
-    mutationFn: async ({ pollId, description, pollStart, pollEnd }: { 
-      pollId: number, 
-      description: string, 
-      pollStart: number, 
-      pollEnd: number 
-    }) => {
+    mutationFn: async ({ pollId, description, pollStart, pollEnd }: { pollId: number, description: string, pollStart: number, pollEnd: number }) => {
+      // Generate a unique transaction ID
+      const txId = `${pollId}-${Date.now()}`
+      
+      // Check if this transaction was already processed
+      const processedTxs = JSON.parse(localStorage.getItem('processedTransactions') || '[]')
+      if (processedTxs.includes(txId)) {
+        throw new Error('Transaction already processed')
+      }
+
+      // Check if poll already exists
       const [pollPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(new BN(pollId).toArray('le', 8))],
         programId
       )
+      
+      try {
+        // Try to fetch the poll to check if it exists
+        await program.account.poll.fetch(pollPda)
+        throw new Error('Poll with this ID already exists')
+      } catch (error: any) {
+        // If error is not about account not found, rethrow it
+        if (!error.message?.includes('Account does not exist')) {
+          throw error
+        }
+      }
 
       // @ts-ignore - bypass TypeScript errors for account naming discrepancies
-      return (program.methods as any)
+      const signature = await (program.methods as any)
         .initializePoll(
           new BN(pollId),
           description,
@@ -121,19 +166,33 @@ export function useVotingProgram() {
         )
         .accounts({ 
           signer: provider.publicKey,
-          poll: pollPda, 
+          poll: pollPda,
           systemProgram: new PublicKey("11111111111111111111111111111111")
         })
         .rpc()
+
+      // Store the transaction ID
+      processedTxs.push(txId)
+      localStorage.setItem('processedTransactions', JSON.stringify(processedTxs))
+
+      return signature
     },
     onSuccess: (signature) => {
       transactionToast(signature)
       toast.success('Poll created successfully!')
       return polls.refetch()
     },
-    onError: (error) => {
-      console.error(error)
-      toast.error('Failed to create poll')
+    onError: (error: any) => {
+      console.error('Error creating poll:', error)
+      if (error.message?.includes('already exists')) {
+        toast.error('A poll with this ID already exists')
+      } else if (error.message?.includes('already processed')) {
+        // Don't show error for already processed transactions
+        console.log('Transaction already processed, poll was created successfully')
+        return polls.refetch()
+      } else {
+        toast.error('Failed to create poll: ' + (error.message || 'Unknown error'))
+      }
     },
   })
 
@@ -251,11 +310,10 @@ export function useVotingProgram() {
       const accounts = await program.account.candidate.all()
       // Filter candidates that belong to this poll
       return accounts.filter(account => {
+        const pollIdBuffer = Buffer.from(new BN(pollId).toArray('le', 8))
+        const candidateNameBuffer = Buffer.from(account.account.candidateName)
         const [candidatePda] = PublicKey.findProgramAddressSync(
-          [
-            Buffer.from(new BN(pollId).toArray('le', 8)),
-            Buffer.from(account.account.candidateName)
-          ],
+          [pollIdBuffer, candidateNameBuffer],
           programId
         )
         return candidatePda.equals(account.publicKey)
@@ -303,6 +361,12 @@ export function useVotingProgram() {
     },
   })
 
+  // Function to check if the current user is an admin (the creator of the poll)
+  const isUserAdmin = (pollCreator: PublicKey | null) => {
+    if (!provider.publicKey || !pollCreator) return false
+    return provider.publicKey.toString() === pollCreator.toString()
+  }
+
   return {
     program,
     programId,
@@ -316,6 +380,9 @@ export function useVotingProgram() {
     checkSolBalance,
     REQUIRED_SOL_AMOUNT,
     unhidePoll,
-    getHiddenPollsData
+    getHiddenPollsData,
+    setPollActive,
+    isPollActive,
+    isUserAdmin
   }
 } 

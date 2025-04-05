@@ -8,7 +8,7 @@ import { ellipsify } from '../ui/ui-layout'
 import { motion } from 'framer-motion'
 
 export function CustomWalletButton() {
-  const { wallets, wallet, publicKey, connecting, connected, disconnect } = useWallet()
+  const { wallets, wallet, publicKey, connecting, connected, disconnect, select } = useWallet()
   const { setVisible } = useWalletModal()
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -32,6 +32,11 @@ export function CustomWalletButton() {
     disconnect().catch((error) => console.error(error))
     setShowDropdown(false)
   }, [disconnect])
+
+  const handleChangeWalletClick = useCallback(() => {
+    setVisible(true)
+    setShowDropdown(false)
+  }, [setVisible])
 
   const formattedAddress = useMemo(() => {
     if (!publicKey) return null
@@ -98,8 +103,21 @@ export function CustomWalletButton() {
           <motion.button
             whileHover={{ backgroundColor: "rgba(163, 228, 215, 0.1)" }}
             className="flex w-full items-center px-4 py-2 text-sm text-[#F5F5F5] hover:bg-[#A3E4D7]/10"
+            onClick={handleChangeWalletClick}
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Change Wallet
+          </motion.button>
+          <motion.button
+            whileHover={{ backgroundColor: "rgba(163, 228, 215, 0.1)" }}
+            className="flex w-full items-center px-4 py-2 text-sm text-[#F5F5F5] hover:bg-[#A3E4D7]/10"
             onClick={handleDisconnectClick}
           >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
             Disconnect
           </motion.button>
         </motion.div>

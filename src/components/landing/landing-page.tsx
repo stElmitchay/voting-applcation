@@ -26,32 +26,32 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-[#2c5446] text-[#F5F5DC]">
       {/* Hero Section */}
-      <div className="container mx-auto pt-10 md:pt-16 relative" style={{ maxWidth: '1441px', height: '70vh', minHeight: '800px' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center h-full">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16 relative" style={{ maxWidth: '1441px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center min-h-[80vh]">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="flex flex-col justify-center h-full"
+            className="flex flex-col justify-center text-center lg:text-left"
           >
-            <h1 className="font-courier font-bold mb-10">
-              <div className="text-8xl md:text-9xl text-[#F5F5DC]">Voting</div>
-              <div className="text-8xl md:text-9xl text-[#F5F5DC]">Reimagined.</div>
+            <h1 className="font-courier font-bold mb-6 sm:mb-8 lg:mb-10">
+              <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl text-[#F5F5DC] leading-tight">Voting</div>
+              <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl text-[#F5F5DC] leading-tight">Reimagined.</div>
             </h1>
-            <p className="text-2xl md:text-3xl mb-8 text-[#F5F5DC] font-courier italic max-w-md">
+            <p className="text-xl sm:text-2xl md:text-3xl mb-6 sm:mb-8 text-[#F5F5DC] font-courier italic max-w-md mx-auto lg:mx-0">
               Make every vote count, literally.
             </p>
-            <div className="flex gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center lg:justify-start">
               {publicKey ? (
                 <motion.button
                   whileHover={cardHover}
                   onClick={() => router.push('/create-poll')}
-                  className="btn bg-white text-[#0A1A14] hover:bg-[#A3E4D7] hover:text-[#0A1A14] px-8"
+                  className="btn bg-white text-[#0A1A14] hover:bg-[#A3E4D7] hover:text-[#0A1A14] px-6 sm:px-8 w-full sm:w-auto"
                 >
                   Get started
                 </motion.button>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
                   <WalletButton />
                 </div>
               )}
@@ -59,29 +59,29 @@ const LandingPage = () => {
           </motion.div>
 
           <motion.div 
-            className="relative h-full flex items-center justify-center"
+            className="relative h-[50vh] sm:h-[60vh] lg:h-[70vh] flex items-center justify-center mt-8 lg:mt-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.3 }}
           >
-            <div className="absolute top-[20%] left-[10%] w-[180px] h-[180px] rounded-full bg-[#A3E4D7]/30 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute top-[10%] sm:top-[15%] lg:top-[20%] left-[5%] sm:left-[8%] lg:left-[10%] w-[120px] sm:w-[150px] md:w-[180px] lg:w-[200px] h-[120px] sm:h-[150px] md:h-[180px] lg:h-[200px] rounded-full bg-[#A3E4D7]/30 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
-                <div className="text-4xl mb-1">🗳️</div>
-                <div className="text-sm">Secure</div>
+                <div className="text-3xl sm:text-4xl lg:text-5xl mb-1">🗳️</div>
+                <div className="text-xs sm:text-sm lg:text-base">Secure</div>
               </div>
             </div>
             
-            <div className="absolute top-[10%] right-[15%] w-[220px] h-[220px] rounded-full bg-[#2C5B4C]/80 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute top-[5%] sm:top-[10%] lg:top-[15%] right-[10%] sm:right-[12%] lg:right-[15%] w-[150px] sm:w-[180px] md:w-[220px] lg:w-[250px] h-[150px] sm:h-[180px] md:h-[220px] lg:h-[250px] rounded-full bg-[#2C5B4C]/80 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
-                <div className="text-4xl mb-1">⚡</div>
-                <div className="text-sm">Fast</div>
+                <div className="text-3xl sm:text-4xl lg:text-5xl mb-1">⚡</div>
+                <div className="text-xs sm:text-sm lg:text-base">Fast</div>
               </div>
             </div>
             
-            <div className="absolute bottom-[10%] left-[25%] w-[250px] h-[250px] rounded-full bg-[#143D28]/70 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute bottom-[10%] left-[15%] sm:left-[20%] lg:left-[25%] w-[180px] sm:w-[200px] md:w-[250px] lg:w-[280px] h-[180px] sm:h-[200px] md:h-[250px] lg:h-[280px] rounded-full bg-[#143D28]/70 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
-                <div className="text-4xl mb-1">🔐</div>
-                <div className="text-sm">Transparent</div>
+                <div className="text-3xl sm:text-4xl lg:text-5xl mb-1">🔐</div>
+                <div className="text-xs sm:text-sm lg:text-base">Transparent</div>
               </div>
             </div>
             

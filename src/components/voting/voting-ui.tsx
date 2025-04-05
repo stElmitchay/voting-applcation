@@ -16,13 +16,20 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
   const [pollStart, setPollStart] = useState('')
   const [pollEnd, setPollEnd] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     
     if (!pollId || !description || !pollStart || !pollEnd) {
       setError('All fields are required')
+      return
+    }
+
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      setError('Please wait for the previous submission to complete')
       return
     }
 
@@ -52,16 +59,34 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
       pollEnd: endTimestamp,
     }
 
-    if (onPollCreated) {
-      onPollCreated(pollDetails)
-    } else {
-      initializePoll.mutate(pollDetails)
+    try {
+      setIsSubmitting(true)
       
-      // Reset form
-      setPollId('')
-      setDescription('')
-      setPollStart('')
-      setPollEnd('')
+      if (onPollCreated) {
+        onPollCreated(pollDetails)
+      } else {
+        await initializePoll.mutateAsync(pollDetails)
+        
+        // Reset form
+        setPollId('')
+        setDescription('')
+        setPollStart('')
+        setPollEnd('')
+      }
+    } catch (error: any) {
+      console.error('Error creating poll:', error)
+      let errorMessage = error.message || 'Failed to create poll'
+      
+      // Handle specific error cases
+      if (errorMessage.includes('already been processed')) {
+        errorMessage = 'This poll has already been created. Please try a different poll ID.'
+      } else if (errorMessage.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds to create the poll.'
+      }
+      
+      setError(errorMessage)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -257,6 +282,12 @@ export function VotingSection({
       return
     }
 
+    // Prevent duplicate votes while transaction is pending
+    if (votingFor) {
+      toast.error('Please wait for your previous vote to complete')
+      return
+    }
+
     try {
       setVoteError(null)
       setVotingFor(candidateName)
@@ -289,7 +320,15 @@ export function VotingSection({
       }
       
       // Show a more user-friendly error
-      const errorMessage = error.message || 'Failed to cast vote'
+      let errorMessage = error.message || 'Failed to cast vote'
+      
+      // Handle specific error cases
+      if (errorMessage.includes('already been processed')) {
+        errorMessage = 'This vote has already been processed. Please refresh the page.'
+      } else if (errorMessage.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds to complete the transaction.'
+      }
+      
       console.error(`Vote error: ${errorMessage}`)
       setVoteError(errorMessage)
       toast.error(`Voting failed: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`)
@@ -472,134 +511,176 @@ export function VotingSection({
 
 // Component to display a poll with its candidates
 export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll: any; publicKey: PublicKey; onUpdate: () => void; isHidden?: boolean }) {
-  const { getPollCandidates, hidePoll /*, unhidePoll */ } = useVotingProgram()
+  const { publicKey: walletPublicKey } = useWallet()
+  const { getPollCandidates, hidePoll, setPollActive, isPollActive, isUserAdmin } = useVotingProgram()
+  const [isExpanded, setIsExpanded] = useState(false)
   const [candidates, setCandidates] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-  const { connected } = useWallet()
+  const [isLoading, setIsLoading] = useState(false)
+  const [isVoting, setIsVoting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isActive, setIsActive] = useState(false)
 
-  const now = Math.floor(Date.now() / 1000)
-  const hasStarted = now >= poll.pollStart.toNumber()
-  const isActive = now >= poll.pollStart.toNumber() && now <= poll.pollEnd.toNumber()
-  const status = isActive ? 'Active' : now < poll.pollStart.toNumber() ? 'Not started' : 'Ended'
+  // Check if the current user is an admin (the creator of the poll)
+  useEffect(() => {
+    setIsAdmin(isUserAdmin(poll.creator))
+  }, [poll.creator, isUserAdmin])
 
-  const fetchCandidates = useCallback(async () => {
-    if (loading) return;
-    
-    setLoading(true)
+  // Check if the poll is active
+  useEffect(() => {
+    const now = Math.floor(Date.now() / 1000)
+    const startTime = poll.pollStart.toNumber()
+    const endTime = poll.pollEnd.toNumber()
+    setIsActive(now >= startTime && now <= endTime)
+  }, [poll.pollStart, poll.pollEnd])
+
+  // Load candidates when expanded
+  useEffect(() => {
+    if (isExpanded) {
+      loadCandidates()
+    }
+  }, [isExpanded])
+
+  const loadCandidates = async () => {
+    setIsLoading(true)
     try {
-      const result = await getPollCandidates(poll.pollId.toNumber())
-      setCandidates(result)
+      const candidatesData = await getPollCandidates(poll.pollId.toNumber())
+      setCandidates(candidatesData)
     } catch (error) {
-      console.error('Error fetching candidates:', error)
+      console.error('Error loading candidates:', error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }, [poll.pollId, getPollCandidates, loading])
-  
+  }
+
   const handleToggleExpand = () => {
-    if (!expanded) {
-      fetchCandidates();
-    }
-    setExpanded(!expanded);
+    setIsExpanded(!isExpanded)
   }
 
   const handleDeletePoll = () => {
-    if (window.confirm(`Are you sure you want to hide Poll #${poll.pollId.toString()}? You won't see it anymore in the list.`)) {
-      hidePoll(poll.pollId.toNumber());
-      toast.success(`Poll #${poll.pollId.toString()} has been hidden`);
-      onUpdate();
-    }
-  };
+    // This would require a new function in the Anchor program
+    // For now, we'll just hide the poll locally
+    hidePoll(poll.pollId.toNumber())
+    onUpdate()
+  }
+
+  const handleToggleActive = () => {
+    setPollActive(poll.pollId.toNumber(), !isActive)
+    setIsActive(!isActive)
+    onUpdate()
+  }
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleString()
   }
 
-  const getTimeRemaining = (endTime: number) => {
+  const getTimeRemaining = (startTime: number, endTime: number) => {
     const now = Math.floor(Date.now() / 1000)
+    
+    // Check if poll has ended
+    if (now > endTime) {
+      return 'Ended - View results'
+    }
+    
+    // Check if poll hasn't started yet
+    if (now < startTime) {
+      const timeUntilStart = startTime - now
+      const days = Math.floor(timeUntilStart / 86400)
+      const hours = Math.floor((timeUntilStart % 86400) / 3600)
+      const minutes = Math.floor((timeUntilStart % 3600) / 60)
+      
+      if (days > 0) {
+        return `Starting in ${days}d ${hours}h`
+      } else if (hours > 0) {
+        return `Starting in ${hours}h ${minutes}m`
+      } else {
+        return `Starting in ${minutes}m`
+      }
+    }
+    
+    // Poll is active, show time remaining until end
     const timeRemaining = endTime - now
+    const days = Math.floor(timeRemaining / 86400)
+    const hours = Math.floor((timeRemaining % 86400) / 3600)
+    const minutes = Math.floor((timeRemaining % 3600) / 60)
     
-    if (timeRemaining <= 0) return "Ended"
-    
-    const days = Math.floor(timeRemaining / (24 * 60 * 60))
-    const hours = Math.floor((timeRemaining % (24 * 60 * 60)) / (60 * 60))
-    const minutes = Math.floor((timeRemaining % (60 * 60)) / 60)
-    
-    return `${days}d ${hours}h ${minutes}m`
+    if (days > 0) {
+      return `Poll ending in ${days}d ${hours}h`
+    } else if (hours > 0) {
+      return `Poll ending in ${hours}h ${minutes}m`
+    } else {
+      return `Poll ending in ${minutes}m`
+    }
   }
 
   return (
-    <div className="bg-[#3a6b5a] rounded-lg border border-[#2c5446] mb-4 overflow-hidden">
+    <div className="bg-[#3a6b5a] rounded-lg border border-[#F5F5DC]/20 overflow-hidden">
       <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-2">
-            <span className={`${
-              isActive 
-                ? 'bg-[#2c5446] text-[#F5F5DC]' 
-                : now < poll.pollStart.toNumber() 
-                ? 'bg-[#2c5446] text-[#F5F5DC]/70' 
-                : 'bg-[#2c5446] text-[#F5F5DC]/50'
-            } text-xs font-medium px-2.5 py-0.5 rounded-full`}>
-              {status}
-            </span>
-            {isActive && (
-              <span className="text-xs text-[#F5F5DC]">
-                Ends in {getTimeRemaining(poll.pollEnd.toNumber())}
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-lg font-medium text-[#F5F5DC]">Poll #{poll.pollId.toString()}</h3>
+            <p className="text-sm text-[#F5F5DC]/80 mt-1">{poll.description}</p>
+            <div className="flex items-center mt-2 text-xs text-[#F5F5DC]/60">
+              <span>Start: {formatDate(poll.pollStart.toNumber())}</span>
+              <span className="mx-2">•</span>
+              <span>End: {formatDate(poll.pollEnd.toNumber())}</span>
+            </div>
+            <div className="mt-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#2c5446] text-[#A3E4D7]">
+                {getTimeRemaining(poll.pollStart.toNumber(), poll.pollEnd.toNumber())}
               </span>
-            )}
+            </div>
           </div>
-          
-          <div className="flex gap-2">
+          <div className="flex space-x-2">
+            {isAdmin && (
+              <>
+                <button
+                  onClick={handleToggleActive}
+                  className={`p-1 rounded-full ${
+                    isActive ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
+                  }`}
+                  title={isActive ? 'Deactivate Poll' : 'Activate Poll'}
+                >
+                  {isActive ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={handleDeletePoll}
+                  className="p-1 rounded-full bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                  title="Delete Poll"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </>
+            )}
             <button
-              onClick={handleDeletePoll}
-              className="text-[#F5F5DC]/70 hover:text-red-400 p-1.5 rounded-full hover:bg-[#2c5446] transition-colors focus:outline-none"
-              title="Hide poll"
+              onClick={handleToggleExpand}
+              className="p-1 rounded-full bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              {isExpanded ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
         
-        <h3 className="text-lg font-bold text-[#F5F5DC] mb-2 hover:text-[#F5F5DC] cursor-pointer" onClick={handleToggleExpand}>
-          Poll #{poll.pollId.toString()}
-        </h3>
-        
-        <>
-          <p className="text-[#F5F5DC]/70 text-sm mb-3">{poll.description}</p>
-          <div className="text-xs text-[#F5F5DC]/50 mb-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="block mb-1 text-[#F5F5DC]">Start:</span>
-                {formatDate(poll.pollStart.toNumber())}
-              </div>
-              <div>
-                <span className="block mb-1 text-[#F5F5DC]">End:</span>
-                {formatDate(poll.pollEnd.toNumber())}
-              </div>
-            </div>
-          </div>
-        </>
-        
-        <button 
-          className="text-sm text-[#F5F5DC] hover:text-[#A3E4D7] font-medium flex items-center"
-          onClick={handleToggleExpand}
-        >
-          {expanded ? 'Hide Details' : 'Show Details'}
-          <svg 
-            className={`ml-1 w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-
-        {expanded && (
+        {isExpanded && (
           <div className="mt-4 border-t border-[#2c5446] pt-4">
             <div className="mb-3">
               <h4 className="text-sm font-medium text-[#F5F5DC] mb-2">Poll Details</h4>
@@ -612,22 +693,20 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
               </p>
             </div>
 
-            {loading ? (
+            {isLoading ? (
               <div className="flex justify-center my-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A3E4D7]"></div>
               </div>
             ) : candidates.length > 0 ? (
               <>
-                <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={fetchCandidates} />
+                <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={loadCandidates} />
               </>
             ) : (
               <div className="text-center py-4">
                 <p className="text-[#F5F5DC]/70">No candidates found for this poll.</p>
-                {!hasStarted ? (
-                  <AddCandidateForm pollId={poll.pollId.toNumber()} onUpdate={fetchCandidates} />
-                ) : (
+                {!isActive && (
                   <p className="text-sm text-red-400 mt-2">
-                    Cannot add candidates after poll has started.
+                    Cannot add candidates after poll has ended.
                   </p>
                 )}
               </div>
@@ -640,7 +719,7 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
 }
 
 // Component to list all polls
-export function PollsList() {
+export function PollsList({ filter = 'active' }: { filter?: 'active' | 'future' | 'past' }) {
   const { polls } = useVotingProgram()
   
   if (polls.isLoading) {
@@ -668,9 +747,55 @@ export function PollsList() {
     )
   }
 
+  console.log('All polls:', polls.data)
+  console.log('Current filter:', filter)
+
+  // Filter polls based on the selected filter
+  const filteredPolls = polls.data.filter(poll => {
+    const now = Math.floor(Date.now() / 1000)
+    
+    // Make sure we're accessing the correct properties
+    const pollData = poll.account
+    console.log('Poll data:', pollData)
+    
+    // Check if pollStart and pollEnd exist and are valid
+    if (!pollData.pollStart || !pollData.pollEnd) {
+      console.error('Poll missing start or end time:', pollData)
+      return false
+    }
+    
+    const startTime = pollData.pollStart.toNumber()
+    const endTime = pollData.pollEnd.toNumber()
+    
+    console.log('Poll:', pollData.title || 'Untitled', 'Start:', startTime, 'End:', endTime, 'Now:', now)
+    
+    let isIncluded = false
+    switch (filter) {
+      case 'active':
+        // For active polls, include those that are currently within their time window
+        isIncluded = now >= startTime && now <= endTime
+        break
+      case 'future':
+        // For future polls, include those that haven't started yet
+        isIncluded = now < startTime
+        break
+      case 'past':
+        // For past polls, include those that have ended
+        isIncluded = now > endTime
+        break
+      default:
+        isIncluded = true
+    }
+    
+    console.log('Is included:', isIncluded)
+    return isIncluded
+  })
+
+  console.log('Filtered polls:', filteredPolls)
+
   return (
     <div className="space-y-2">
-      {polls.data.map((pollAccount) => (
+      {filteredPolls.map((pollAccount) => (
         <PollCard
           key={pollAccount.publicKey.toString()}
           poll={pollAccount.account}
