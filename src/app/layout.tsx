@@ -3,6 +3,7 @@ import {ClusterProvider} from '@/components/cluster/cluster-data-access'
 import {SolanaProvider} from '@/components/solana/solana-provider'
 import {UiLayout} from '@/components/ui/ui-layout'
 import {ReactQueryProvider} from './react-query-provider'
+import { CivicWrapper } from '@/components/civic/civic-provider'
 
 export const metadata = {
   title: 'Utopia - Decentralized Voting',
@@ -40,7 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ReactQueryProvider>
           <ClusterProvider>
             <SolanaProvider>
-              <UiLayout links={links}>{children}</UiLayout>
+              <CivicWrapper>
+                <UiLayout links={links}>{children}</UiLayout>
+              </CivicWrapper>
             </SolanaProvider>
           </ClusterProvider>
         </ReactQueryProvider>

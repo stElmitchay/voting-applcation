@@ -172,6 +172,9 @@ export type Votingapplication = {
               }
             ]
           }
+        },
+        {
+          "name": "gatewayToken"
         }
       ],
       "args": [
@@ -212,6 +215,13 @@ export type Votingapplication = {
         153,
         111
       ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "invalidGatewayToken",
+      "msg": "Invalid gateway token"
     }
   ],
   "types": [

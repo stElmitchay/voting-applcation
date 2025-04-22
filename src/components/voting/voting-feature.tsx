@@ -6,9 +6,12 @@ import { WalletButton } from '../solana/solana-provider'
 import { PollsList /* HiddenPollsList */ } from './voting-ui'
 import Link from 'next/link'
 import { useState } from 'react'
+import { useCivic } from '../civic/civic-provider'
+import { CivicVerificationButton } from '../civic/civic-button'
 
 export function VotingFeature() {
   const { publicKey } = useWallet()
+  const { hasValidPass, isLoading } = useCivic()
   // Add filter state
   const [filter, setFilter] = useState<'active' | 'future' | 'past'>('active')
 
@@ -29,12 +32,16 @@ export function VotingFeature() {
                     <h1 className="text-2xl font-bold text-[#F5F5DC]">Active Polls</h1>
                   </div>
                   {publicKey ? (
-                    <Link href="/create-poll" className="bg-white hover:bg-[#A3E4D7] text-[#0A1A14] py-2 px-4 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Create New Poll
-                    </Link>
+                    hasValidPass ? (
+                      <Link href="/create-poll" className="bg-white hover:bg-[#A3E4D7] text-[#0A1A14] py-2 px-4 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create New Poll
+                      </Link>
+                    ) : (
+                      <CivicVerificationButton />
+                    )
                   ) : (
                     <WalletButton />
                   )}

@@ -11,12 +11,14 @@ import { useCluster } from '../cluster/cluster-data-access'
 import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../ui/ui-layout'
 import * as anchor from '@coral-xyz/anchor'
+import { useGateway } from '@civic/solana-gateway-react'
 
 export function useVotingProgram() {
   const { connection } = useConnection()
   const { cluster } = useCluster()
   const transactionToast = useTransactionToast()
   const provider = useAnchorProvider()
+  const { gatewayToken } = useGateway()
   const programId = useMemo(() => getVotingapplicationProgramId(cluster.network as Cluster), [cluster])
   const program = useMemo(() => getVotingapplicationProgram(provider, programId), [provider, programId])
 
@@ -276,6 +278,10 @@ export function useVotingProgram() {
         programId
       )
 
+      if (!gatewayToken || gatewayToken.state !== 'ACTIVE') {
+        throw new Error('No valid Civic Pass found. Please verify your identity first.')
+      }
+
       // @ts-ignore - bypass TypeScript errors for account naming discrepancies
       return (program.methods as any)
         .vote(
@@ -285,7 +291,8 @@ export function useVotingProgram() {
         .accounts({ 
           signer: provider.publicKey,
           poll: pollPda,
-          candidate: candidatePda
+          candidate: candidatePda,
+          gateway_token: gatewayToken.publicKey
         })
         .rpc()
     },

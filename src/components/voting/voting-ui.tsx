@@ -7,10 +7,13 @@ import { useVotingProgram } from './voting-data-access'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { ellipsify } from '../ui/ui-layout'
 import { toast } from 'react-hot-toast'
+import { useCivic } from '../civic/civic-provider'
+import { CivicVerificationButton } from '../civic/civic-button'
 
 // Component to create a new poll
 export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: any) => void }) {
   const { initializePoll } = useVotingProgram()
+  const { hasValidPass, isLoading } = useCivic()
   const [pollId, setPollId] = useState('')
   const [description, setDescription] = useState('')
   const [pollStart, setPollStart] = useState('')
@@ -21,7 +24,12 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    
+
+    if (!hasValidPass) {
+      setError('Please verify your identity with Civic Pass to create polls')
+      return
+    }
+
     if (!pollId || !description || !pollStart || !pollEnd) {
       setError('All fields are required')
       return
@@ -37,12 +45,12 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
     const startDate = new Date(pollStart)
     const endDate = new Date(pollEnd)
     const now = new Date()
-    
+
     if (startDate < now) {
       setError('Start date cannot be in the past')
       return
     }
-    
+
     if (endDate <= startDate) {
       setError('End date must be after start date')
       return
@@ -61,12 +69,12 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
 
     try {
       setIsSubmitting(true)
-      
+
       if (onPollCreated) {
         onPollCreated(pollDetails)
       } else {
         await initializePoll.mutateAsync(pollDetails)
-        
+
         // Reset form
         setPollId('')
         setDescription('')
@@ -76,14 +84,14 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
     } catch (error: any) {
       console.error('Error creating poll:', error)
       let errorMessage = error.message || 'Failed to create poll'
-      
+
       // Handle specific error cases
       if (errorMessage.includes('already been processed')) {
         errorMessage = 'This poll has already been created. Please try a different poll ID.'
       } else if (errorMessage.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds to create the poll.'
       }
-      
+
       setError(errorMessage)
     } finally {
       setIsSubmitting(false)
@@ -91,79 +99,92 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="bg-[#2c5446]/20 border border-[#2c5446] text-[#F5F5DC] px-4 py-3 rounded-lg text-sm">
-        <p className="font-medium mb-1">Important Notice:</p>
-        <p>Once a poll is created, it cannot be edited or deleted. All details including description, dates, and candidates will be permanently recorded on the blockchain.</p>
-      </div>
-
-      {error && (
-        <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-      
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-[#F5F5DC]">Poll ID</label>
-        <input
-          type="number"
-          placeholder="Enter a unique identifier for your poll"
-          className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#F5F5DC]/50"
-          value={pollId}
-          onChange={(e) => setPollId(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-[#F5F5DC]">Description</label>
-        <textarea
-          placeholder="Describe what your poll is about"
-          className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#F5F5DC]/50"
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-[#F5F5DC]">Start Date</label>
-          <input
-            type="datetime-local"
-            className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent"
-            value={pollStart}
-            onChange={(e) => setPollStart(e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-[#F5F5DC]">End Date</label>
-          <input
-            type="datetime-local"
-            className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent"
-            value={pollEnd}
-            onChange={(e) => setPollEnd(e.target.value)}
-            required
-          />
-        </div>
-      </div>
-      <div className="pt-2">
-        <button
-          type="submit"
-          className="w-full px-4 py-2.5 bg-white text-[#0A1A14] text-sm font-medium rounded-lg hover:bg-[#A3E4D7] hover:text-[#0A1A14] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={initializePoll.isPending}
-        >
-          {initializePoll.isPending ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#0A1A14] rounded-full"></div>
-              <span>Creating...</span>
+    <div className="card bg-base-200 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Create New Poll</h2>
+        {!hasValidPass && !isLoading && (
+          <div className="alert alert-warning mb-4">
+            <div className="flex items-center gap-2">
+              <span>Please verify your identity to create polls</span>
+              <CivicVerificationButton />
             </div>
-          ) : (
-            'Create Poll'
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="bg-[#2c5446]/20 border border-[#2c5446] text-[#F5F5DC] px-4 py-3 rounded-lg text-sm">
+            <p className="font-medium mb-1">Important Notice:</p>
+            <p>Once a poll is created, it cannot be edited or deleted. All details including description, dates, and candidates will be permanently recorded on the blockchain.</p>
+          </div>
+
+          {error && (
+            <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
           )}
-        </button>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[#F5F5DC]">Poll ID</label>
+            <input
+              type="number"
+              placeholder="Enter a unique identifier for your poll"
+              className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#F5F5DC]/50"
+              value={pollId}
+              onChange={(e) => setPollId(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[#F5F5DC]">Description</label>
+            <textarea
+              placeholder="Describe what your poll is about"
+              className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#F5F5DC]/50"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[#F5F5DC]">Start Date</label>
+              <input
+                type="datetime-local"
+                className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent"
+                value={pollStart}
+                onChange={(e) => setPollStart(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[#F5F5DC]">End Date</label>
+              <input
+                type="datetime-local"
+                className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent"
+                value={pollEnd}
+                onChange={(e) => setPollEnd(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="w-full px-4 py-2.5 bg-white text-[#0A1A14] text-sm font-medium rounded-lg hover:bg-[#A3E4D7] hover:text-[#0A1A14] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={initializePoll.isPending}
+            >
+              {initializePoll.isPending ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#0A1A14] rounded-full"></div>
+                  <span>Creating...</span>
+                </div>
+              ) : (
+                'Create Poll'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   )
 }
 
@@ -176,7 +197,7 @@ export function AddCandidateForm({ pollId, onUpdate }: { pollId: number; onUpdat
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    
+
     if (!candidateName.trim()) {
       setError('Candidate name is required')
       return
@@ -187,7 +208,7 @@ export function AddCandidateForm({ pollId, onUpdate }: { pollId: number; onUpdat
         pollId,
         candidateName: candidateName.trim(),
       })
-      
+
       setCandidateName('')
       if (onUpdate) onUpdate()
     } catch (error: any) {
@@ -233,19 +254,20 @@ export function AddCandidateForm({ pollId, onUpdate }: { pollId: number; onUpdat
 }
 
 // Component to vote for a candidate
-export function VotingSection({ 
-  pollId, 
-  candidates, 
-  isActive, 
-  onUpdate 
-}: { 
-  pollId: number; 
-  candidates: any[]; 
+export function VotingSection({
+  pollId,
+  candidates,
+  isActive,
+  onUpdate
+}: {
+  pollId: number;
+  candidates: any[];
   isActive: boolean;
   onUpdate?: () => void;
 }) {
   const { vote, deleteCandidate, REQUIRED_SOL_AMOUNT, checkSolBalance } = useVotingProgram()
   const { publicKey } = useWallet()
+  const { hasValidPass, isLoading } = useCivic()
   const [isChecking, setIsChecking] = useState(false)
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
@@ -277,6 +299,11 @@ export function VotingSection({
   }, [publicKey, checkUserSolBalance])
 
   const handleVote = async (candidateName: string) => {
+    if (!hasValidPass) {
+      toast.error('Please verify your identity with Civic Pass to vote')
+      return
+    }
+
     if (!publicKey) {
       toast.error('Please connect your wallet to vote')
       return
@@ -291,44 +318,44 @@ export function VotingSection({
     try {
       setVoteError(null)
       setVotingFor(candidateName)
-      
+
       console.log(`Attempting to vote for candidate "${candidateName}" in poll #${pollId}`)
       console.log('Current wallet:', publicKey.toString())
-      
+
       // Force cleanup of any previous errors
       toast.dismiss()
-      
+
       // Try to cast vote
       const result = await vote.mutateAsync({
         pollId,
         candidateName,
       })
-      
+
       console.log('Vote transaction successful:', result)
       toast.success(`Vote cast for ${candidateName}!`)
-      
+
       if (onUpdate) {
         console.log('Refreshing candidates...')
         onUpdate()
       }
     } catch (error: any) {
       console.error('Vote error details:', error)
-      
+
       // More detailed error logging
       if (error.logs) {
         console.error('Transaction logs:', error.logs)
       }
-      
+
       // Show a more user-friendly error
       let errorMessage = error.message || 'Failed to cast vote'
-      
+
       // Handle specific error cases
       if (errorMessage.includes('already been processed')) {
         errorMessage = 'This vote has already been processed. Please refresh the page.'
       } else if (errorMessage.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds to complete the transaction.'
       }
-      
+
       console.error(`Vote error: ${errorMessage}`)
       setVoteError(errorMessage)
       toast.error(`Voting failed: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`)
@@ -342,14 +369,14 @@ export function VotingSection({
       toast.error('Please connect your wallet to delete a candidate')
       return
     }
-    
+
     if (window.confirm(`Are you sure you want to delete candidate "${candidateName}"? This action cannot be undone.`)) {
       try {
         await deleteCandidate.mutateAsync({
           pollId,
           candidateName,
         })
-        
+
         if (onUpdate) onUpdate()
       } catch (error) {
         console.error('Error deleting candidate:', error)
@@ -360,7 +387,7 @@ export function VotingSection({
   const totalVotes = candidates.reduce((sum, c) => sum + Number(c.account.candidateVotes), 0)
 
   return (
-    <div className="bg-[#2c5446] rounded-lg border border-[#2c5446] p-4">
+    <div className="bg-[#2c5446] rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-[#F5F5DC]">Cast your vote</h3>
         <div className="text-sm text-[#F5F5DC]/70">
@@ -372,13 +399,13 @@ export function VotingSection({
           </span>
         </div>
       </div>
-      
+
       {publicKey && (
         <div className="mb-4">
-          {solBalance !== null && (
-            <div className={`p-3 rounded-lg text-sm ${solBalance >= REQUIRED_SOL_AMOUNT ? 'bg-[#2c5446] text-[#F5F5DC]' : 'bg-[#2c5446] text-[#F5F5DC]/70'} flex justify-between items-center`}>
+          {
+            <div className={`p-3 rounded-lg text-sm ${solBalance !== null && solBalance >= REQUIRED_SOL_AMOUNT ? 'bg-[#3a6b5a] text-[#F5F5DC]' : 'bg-[#3a6b5a] text-[#F5F5DC]/70'} flex justify-between items-center`}>
               <div className="flex items-center">
-                {solBalance >= REQUIRED_SOL_AMOUNT ? (
+                {solBalance !== null && solBalance >= REQUIRED_SOL_AMOUNT ? (
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -388,13 +415,13 @@ export function VotingSection({
                   </svg>
                 )}
                 <span>
-                  {solBalance >= REQUIRED_SOL_AMOUNT 
-                    ? `You have ${solBalance.toFixed(4)} SOL. You can vote!` 
-                    : `You have ${solBalance.toFixed(4)} SOL. You need at least ${REQUIRED_SOL_AMOUNT} SOL to vote.`}
+                  {solBalance !== null && solBalance >= REQUIRED_SOL_AMOUNT
+                    ? `You have ${solBalance.toFixed(4)} SOL. You can vote!`
+                    : `You have ${solBalance?.toFixed(4) ?? '0.0000'} SOL. You need at least ${REQUIRED_SOL_AMOUNT} SOL to vote.`}
                 </span>
               </div>
-              <button 
-                onClick={checkUserSolBalance} 
+              <button
+                onClick={checkUserSolBalance}
                 className="text-sm px-2 py-1 rounded hover:bg-[#2c5446]/50 focus:outline-none"
                 disabled={isChecking}
                 title="Refresh SOL balance"
@@ -404,15 +431,15 @@ export function VotingSection({
                 </svg>
               </button>
             </div>
-          )}
-          
+          }
+
           {isChecking && (
-            <div className="flex justify-center items-center my-2 p-3 bg-[#2c5446] rounded-lg">
+            <div className="flex justify-center items-center my-2 p-3 bg-[#3a6b5a] rounded-lg">
               <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#F5F5DC] rounded-full"></div>
               <span className="text-sm text-[#F5F5DC]">Checking SOL balance...</span>
             </div>
           )}
-          
+
           {voteError && (
             <div className="bg-red-900/20 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm mt-2">
               {voteError}
@@ -420,26 +447,26 @@ export function VotingSection({
           )}
         </div>
       )}
-      
+
       {!publicKey && isActive && (
-        <div className="bg-[#2c5446] text-[#F5F5DC]/70 p-3 mb-4 rounded-lg text-sm">
+        <div className="bg-[#3a6b5a] text-[#F5F5DC]/70 p-3 mb-4 rounded-lg text-sm">
           Connect your wallet to vote for a candidate
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 gap-4">
         {candidates.map((candidate, index) => {
           const candidateName = candidate.account.candidateName
           const voteCount = Number(candidate.account.candidateVotes)
-          const votePercentage = totalVotes > 0 
-            ? Math.round((voteCount / totalVotes) * 100) 
+          const votePercentage = totalVotes > 0
+            ? Math.round((voteCount / totalVotes) * 100)
             : 0
-            
+
           const canVote = isActive && publicKey && (!isChecking) && (solBalance !== null && solBalance >= REQUIRED_SOL_AMOUNT)
           const isVoting = votingFor === candidateName
-            
+
           return (
-            <div key={index} className="border border-[#2c5446] rounded-lg p-4">
+            <div key={index} className="bg-[#3a6b5a] rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
                 <h4 className="text-lg font-medium text-[#F5F5DC]">{candidateName}</h4>
                 <div className="flex items-center gap-2">
@@ -448,10 +475,10 @@ export function VotingSection({
                       onClick={() => handleVote(candidateName)}
                       className="px-4 py-2 bg-white text-[#0A1A14] text-sm font-medium rounded-lg hover:bg-[#A3E4D7] hover:text-[#0A1A14] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={!canVote || vote.isPending || isVoting}
-                      title={!publicKey 
-                        ? 'Connect your wallet to vote' 
-                        : !isActive 
-                        ? 'Poll is not active' 
+                      title={!publicKey
+                        ? 'Connect your wallet to vote'
+                        : !isActive
+                        ? 'Poll is not active'
                         : isChecking
                         ? 'Checking SOL balance...'
                         : solBalance !== null && solBalance < REQUIRED_SOL_AMOUNT
@@ -481,7 +508,7 @@ export function VotingSection({
                   )}
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="h-2 w-full bg-[#2c5446] rounded-full overflow-hidden">
                   <div
@@ -498,8 +525,8 @@ export function VotingSection({
           )
         })}
       </div>
-      
-      <div className="mt-6 pt-4 border-t border-[#2c5446]">
+
+      <div className="mt-6 pt-4 border-t border-[#F5F5DC]/20">
         <div className="flex justify-between text-sm font-medium text-[#F5F5DC] mb-2">
           <span>Total Votes</span>
           <span>{totalVotes}</span>
@@ -576,19 +603,19 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
 
   const getTimeRemaining = (startTime: number, endTime: number) => {
     const now = Math.floor(Date.now() / 1000)
-    
+
     // Check if poll has ended
     if (now > endTime) {
       return 'Ended - View results'
     }
-    
+
     // Check if poll hasn't started yet
     if (now < startTime) {
       const timeUntilStart = startTime - now
       const days = Math.floor(timeUntilStart / 86400)
       const hours = Math.floor((timeUntilStart % 86400) / 3600)
       const minutes = Math.floor((timeUntilStart % 3600) / 60)
-      
+
       if (days > 0) {
         return `Starting in ${days}d ${hours}h`
       } else if (hours > 0) {
@@ -597,13 +624,13 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
         return `Starting in ${minutes}m`
       }
     }
-    
+
     // Poll is active, show time remaining until end
     const timeRemaining = endTime - now
     const days = Math.floor(timeRemaining / 86400)
     const hours = Math.floor((timeRemaining % 86400) / 3600)
     const minutes = Math.floor((timeRemaining % 3600) / 60)
-    
+
     if (days > 0) {
       return `Poll ending in ${days}d ${hours}h`
     } else if (hours > 0) {
@@ -679,7 +706,7 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
             </button>
           </div>
         </div>
-        
+
         {isExpanded && (
           <div className="mt-4 border-t border-[#2c5446] pt-4">
             <div className="mb-3">
@@ -721,7 +748,7 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
 // Component to list all polls
 export function PollsList({ filter = 'active' }: { filter?: 'active' | 'future' | 'past' }) {
   const { polls } = useVotingProgram()
-  
+
   if (polls.isLoading) {
     return (
       <div className="flex justify-center py-4">
@@ -753,22 +780,22 @@ export function PollsList({ filter = 'active' }: { filter?: 'active' | 'future' 
   // Filter polls based on the selected filter
   const filteredPolls = polls.data.filter(poll => {
     const now = Math.floor(Date.now() / 1000)
-    
+
     // Make sure we're accessing the correct properties
     const pollData = poll.account
     console.log('Poll data:', pollData)
-    
+
     // Check if pollStart and pollEnd exist and are valid
     if (!pollData.pollStart || !pollData.pollEnd) {
       console.error('Poll missing start or end time:', pollData)
       return false
     }
-    
+
     const startTime = pollData.pollStart.toNumber()
     const endTime = pollData.pollEnd.toNumber()
-    
-    console.log('Poll:', pollData.title || 'Untitled', 'Start:', startTime, 'End:', endTime, 'Now:', now)
-    
+
+    console.log('Poll:', pollData.description || 'Untitled', 'Start:', startTime, 'End:', endTime, 'Now:', now)
+
     let isIncluded = false
     switch (filter) {
       case 'active':
@@ -786,7 +813,7 @@ export function PollsList({ filter = 'active' }: { filter?: 'active' | 'future' 
       default:
         isIncluded = true
     }
-    
+
     console.log('Is included:', isIncluded)
     return isIncluded
   })
@@ -805,4 +832,4 @@ export function PollsList({ filter = 'active' }: { filter?: 'active' | 'future' 
       ))}
     </div>
   )
-} 
+}

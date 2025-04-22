@@ -64,24 +64,24 @@ const LandingPage = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.3 }}
           >
-            <div className="absolute top-[10%] sm:top-[15%] lg:top-[20%] left-[5%] sm:left-[8%] lg:left-[10%] w-[120px] sm:w-[150px] md:w-[180px] lg:w-[200px] h-[120px] sm:h-[150px] md:h-[180px] lg:h-[200px] rounded-full bg-[#A3E4D7]/30 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute top-[25%] left-[1%] w-[280px] h-[280px] rounded-full bg-[#A3E4D7]/15 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl lg:text-5xl mb-1">🗳️</div>
-                <div className="text-xs sm:text-sm lg:text-base">Secure</div>
+                <div className="text-6xl mb-3">🗳️</div>
+                <div className="text-lg font-medium">Secure</div>
               </div>
             </div>
             
-            <div className="absolute top-[5%] sm:top-[10%] lg:top-[15%] right-[10%] sm:right-[12%] lg:right-[15%] w-[150px] sm:w-[180px] md:w-[220px] lg:w-[250px] h-[150px] sm:h-[180px] md:h-[220px] lg:h-[250px] rounded-full bg-[#2C5B4C]/80 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute top-[30%] right-[1%] w-[280px] h-[280px] rounded-full bg-[#2C5B4C]/80 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl lg:text-5xl mb-1">⚡</div>
-                <div className="text-xs sm:text-sm lg:text-base">Fast</div>
+                <div className="text-6xl mb-3">⚡</div>
+                <div className="text-lg font-medium">Fast</div>
               </div>
             </div>
             
-            <div className="absolute bottom-[10%] left-[15%] sm:left-[20%] lg:left-[25%] w-[180px] sm:w-[200px] md:w-[250px] lg:w-[280px] h-[180px] sm:h-[200px] md:h-[250px] lg:h-[280px] rounded-full bg-[#143D28]/70 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute bottom-[20%] left-[25%] w-[280px] h-[280px] rounded-full bg-[#143D28]/70 backdrop-blur-md flex items-center justify-center">
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl lg:text-5xl mb-1">🔐</div>
-                <div className="text-xs sm:text-sm lg:text-base">Transparent</div>
+                <div className="text-6xl mb-3">🔐</div>
+                <div className="text-lg font-medium">Transparent</div>
               </div>
             </div>
             

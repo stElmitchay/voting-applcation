@@ -10,6 +10,17 @@ import {AccountChecker} from '../account/account-ui'
 import {ClusterChecker, ClusterUiSelect, ExplorerLink} from '../cluster/cluster-ui'
 import {WalletButton} from '../solana/solana-provider'
 
+export function Button({ children, className = '', ...props }: { children: ReactNode; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={`px-4 py-2 rounded-lg transition-colors ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function UiLayout({ children, links }: { children: ReactNode; links: { label: string; path: string }[] }) {
   const pathname = usePathname()
 

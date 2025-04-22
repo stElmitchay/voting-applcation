@@ -166,6 +166,9 @@
               }
             ]
           }
+        },
+        {
+          "name": "gateway_token"
         }
       ],
       "args": [
@@ -206,6 +209,13 @@
         153,
         111
       ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidGatewayToken",
+      "msg": "Invalid gateway token"
     }
   ],
   "types": [
