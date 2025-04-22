@@ -62,7 +62,7 @@ export function CivicProvider({ children }: { children: ReactNode }) {
 }
 
 export function CivicWrapper({ children }: { children: ReactNode }) {
-  const { publicKey } = useWallet()
+  const { publicKey, signTransaction, signAllTransactions } = useWallet()
   const connection = new Connection('https://api.devnet.solana.com')
 
   if (!publicKey) {
@@ -72,12 +72,16 @@ export function CivicWrapper({ children }: { children: ReactNode }) {
   const wallet = {
     publicKey,
     signTransaction: async (transaction: any) => {
-      // This will be handled by the wallet adapter
-      return transaction
+      if (!signTransaction) {
+        throw new Error('Wallet does not support signing transactions')
+      }
+      return signTransaction(transaction)
     },
     signAllTransactions: async (transactions: any[]) => {
-      // This will be handled by the wallet adapter
-      return transactions
+      if (!signAllTransactions) {
+        throw new Error('Wallet does not support signing multiple transactions')
+      }
+      return signAllTransactions(transactions)
     }
   }
 
