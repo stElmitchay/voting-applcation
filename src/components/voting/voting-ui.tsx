@@ -456,16 +456,17 @@ export function VotingSection({
 }
 
 // Component to display a poll with its candidates
-export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll: any; publicKey: PublicKey; onUpdate: () => void; isHidden?: boolean }) {
+export function PollCard({ poll, publicKey, onUpdate, isHidden = false, defaultExpanded = false }: { poll: any; publicKey: PublicKey; onUpdate: () => void; isHidden?: boolean; defaultExpanded?: boolean }) {
   const { publicKey: walletPublicKey } = useWallet()
   const { getPollCandidates, hidePoll, setPollActive, isPollActive, isUserAdmin } = useVotingProgram()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [candidates, setCandidates] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isVoting, setIsVoting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isActive, setIsActive] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
 
   // Check if the current user is an admin (the creator of the poll)
   useEffect(() => {
@@ -559,11 +560,32 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
     }
   }
 
+  const handleShare = async () => {
+    const pollUrl = `${window.location.origin}/poll/${poll.pollId.toString()}`
+    try {
+      await navigator.clipboard.writeText(pollUrl)
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
+      toast.success('Poll link copied to clipboard!')
+    } catch (err) {
+      toast.error('Failed to copy link')
+    }
+  }
+
+  // Candidate summary string
+  const candidateSummary = candidates.length > 0
+    ? candidates.map(c => c.account.candidateName).join(' vs ')
+    : 'No candidates yet'
+
+  // Prevent card click from toggling when clicking on action buttons
+  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()
+
   return (
-    <div className="bg-[#3a6b5a] rounded-lg border border-[#F5F5DC]/20 overflow-hidden">
+    <div className="bg-[#3a6b5a] rounded-lg border border-[#F5F5DC]/20 overflow-hidden cursor-pointer transition-shadow hover:shadow-lg"
+      onClick={() => setIsExpanded(v => !v)}>
       <div className="p-4">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="flex-1 min-w-0">
             <h3 className="text-lg font-medium text-[#F5F5DC]">Poll #{poll.pollId.toString()}</h3>
             <p className="text-sm text-[#F5F5DC]/80 mt-1">{poll.description}</p>
             <div className="flex items-center mt-2 text-xs text-[#F5F5DC]/60">
@@ -576,12 +598,16 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
                 {getTimeRemaining(poll.pollStart.toNumber(), poll.pollEnd.toNumber())}
               </span>
             </div>
+            {/* Candidate summary always visible */}
+            <div className="mt-2 text-sm text-[#A3E4D7] font-semibold truncate">
+              {candidateSummary}
+            </div>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-col space-y-2 ml-4">
             {isAdmin && (
               <>
                 <button
-                  onClick={handleToggleActive}
+                  onClick={e => { stopPropagation(e); handleToggleActive(); }}
                   className={`p-1 rounded-full ${
                     isActive ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
                   }`}
@@ -599,7 +625,7 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
                   )}
                 </button>
                 <button
-                  onClick={handleDeletePoll}
+                  onClick={e => { stopPropagation(e); handleDeletePoll(); }}
                   className="p-1 rounded-full bg-red-900/30 text-red-400 hover:bg-red-900/50"
                   title="Delete Poll"
                 >
@@ -610,7 +636,23 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
               </>
             )}
             <button
-              onClick={handleToggleExpand}
+              onClick={e => { stopPropagation(e); handleShare(); }}
+              className={`p-1 rounded-full ${isCopied ? 'bg-green-900/30 text-green-400' : 'bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80'}`}
+              title="Share Poll"
+            >
+              {isCopied ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <rect x="9" y="9" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
+                  <rect x="3" y="3" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={e => { stopPropagation(e); handleToggleExpand(); }}
               className="p-1 rounded-full bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80"
             >
               {isExpanded ? (
@@ -625,7 +667,6 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false }: { poll
             </button>
           </div>
         </div>
-
         {isExpanded && (
           <div className="mt-4 border-t border-[#2c5446] pt-4">
             <div className="mb-3">
