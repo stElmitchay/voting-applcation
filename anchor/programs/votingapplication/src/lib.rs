@@ -1,21 +1,9 @@
 #![allow(clippy::result_large_err)]
 
 use anchor_lang::prelude::*;
-use solana_gateway::Gateway;
-use std::str::FromStr;
 
-declare_id!("EFhNioWivWWzHP2iv2uV8hAT1DHr8C1PfsZ3C65PKPkh");
+declare_id!("5zuwXytbwB9nDBvpcP8n235F2hBJSSPc561MB25kZboX");
 
-// Define error codes for the program
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Invalid gateway token")]
-    InvalidGatewayToken,
-}
-
-// this defines the program's instructions   Instruction to create a new poll
-// - ctx: Contains all account info needed for this instruction
-// - _poll_id: Unique identifier for the poll
 #[program]
 pub mod votingapplication {
     use super::*;
@@ -39,53 +27,21 @@ pub mod votingapplication {
                                  candidate_name: String,
                                  _poll_id: u64) -> Result<()>{
 
-
-
     let candidate = &mut ctx.accounts.candidate;
     let poll = &mut ctx.accounts.poll;
     poll.candidate_amount += 1;
     candidate.candidate_name = candidate_name;
     candidate.candidate_votes = 0;
 
-
    Ok(())
   }
 
   pub fn vote(ctx: Context<Vote>, _candidate_name: String, _poll_id:u64) -> Result<()> {
-    // Verify the gateway token
-    let gateway_token = &ctx.accounts.gateway_token;
-    let user_wallet = &ctx.accounts.signer;
-
-    // The network key for the Civic Uniqueness Pass
-    let network_key = Pubkey::from_str("uniqobk8oGh4XBLMqM68K8M2zNu3CdYX7q5go7whQiv").unwrap();
-
-    // Log information about the gateway token for debugging
-    msg!("Gateway token account: {}", gateway_token.key());
-    msg!("User wallet: {}", user_wallet.key());
-    msg!("Network key: {}", network_key);
-
-    // Verify the gateway token
-    match Gateway::verify_gateway_token_account_info(
-        gateway_token,
-        &user_wallet.key(),
-        &network_key,
-        None, // No verification options
-    ) {
-        Ok(_) => {
-            // If verification passes, proceed with the vote
-            let candidate = &mut ctx.accounts.candidate;
-            candidate.candidate_votes += 1;
-            msg!("voted for {}", candidate.candidate_name);
-            msg!("votes {}", candidate.candidate_votes);
-            Ok(())
-        },
-        Err(err) => {
-            // Log the specific error for debugging
-            msg!("Gateway token verification failed: {:?}", err);
-            msg!("Gateway token not issued by correct gatekeeper network");
-            Err(error!(ErrorCode::InvalidGatewayToken))
-        }
-    }
+    let candidate = &mut ctx.accounts.candidate;
+    candidate.candidate_votes += 1;
+    msg!("voted for {}", candidate.candidate_name);
+    msg!("votes {}", candidate.candidate_votes);
+    Ok(())
   }
 }
 
@@ -106,10 +62,6 @@ pub struct Vote <'info>{
     bump
   )]
   pub candidate: Account<'info, Candidate>,
-
-  // Add the gateway token account
-  /// CHECK: This is the gateway token account
-  pub gateway_token: UncheckedAccount<'info>,
 }
 
 

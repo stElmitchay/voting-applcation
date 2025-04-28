@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-votingapplication = "EFhNioWivWWzHP2iv2uV8hAT1DHr8C1PfsZ3C65PKPkh"
+votingapplication = "5zuwXytbwB9nDBvpcP8n235F2hBJSSPc561MB25kZboX"
 
 [programs.devnet]
-votingapplication = "EFhNioWivWWzHP2iv2uV8hAT1DHr8C1PfsZ3C65PKPkh"
+votingapplication = "5zuwXytbwB9nDBvpcP8n235F2hBJSSPc561MB25kZboX"
 
 [registry]
 url = "https://api.apr.dev"
@@ -24,7 +24,7 @@ test = "../node_modules/.bin/jest --preset ts-jest"
 [test]
 startup_wait = 5000
 shutdown_wait = 2000
-upgradeable = false
+upgradeable = true
 
 [test.validator]
 bind_address = "127.0.0.1"

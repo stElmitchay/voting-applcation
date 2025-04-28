@@ -3,49 +3,59 @@
 import { getVotingapplicationProgram, getVotingapplicationProgramId } from '@project/anchor'
 import { useConnection } from '@solana/wallet-adapter-react'
 import { BN } from '@coral-xyz/anchor'
-import { Cluster, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
+import { Cluster, LAMPORTS_PER_SOL, PublicKey, Transaction, SystemProgram } from '@solana/web3.js'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useCluster } from '../cluster/cluster-data-access'
 import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../ui/ui-layout'
 import * as anchor from '@coral-xyz/anchor'
-import { useGateway } from '@civic/solana-gateway-react'
 
 export function useVotingProgram() {
   const { connection } = useConnection()
   const { cluster } = useCluster()
   const transactionToast = useTransactionToast()
   const provider = useAnchorProvider()
-  const { gatewayToken } = useGateway()
-  const programId = useMemo(() => getVotingapplicationProgramId(cluster.network as Cluster), [cluster])
-  const program = useMemo(() => getVotingapplicationProgram(provider, programId), [provider, programId])
+  const programId = useMemo(() => {
+    const id = getVotingapplicationProgramId(cluster.network as Cluster)
+    console.log('Initializing program with ID:', id.toString())
+    return id
+  }, [cluster])
+  
+  const program = useMemo(() => {
+    console.log('Creating program with provider:', provider.publicKey?.toString())
+    const p = getVotingapplicationProgram(provider, programId)
+    console.log('Program created successfully')
+    return p
+  }, [provider, programId])
 
   // Required SOL amount to vote (in SOL)
   const REQUIRED_SOL_AMOUNT = 1
+  const [solBalance, setSolBalance] = useState<number>(0)
+  const [hasEnoughSol, setHasEnoughSol] = useState<boolean>(false)
 
-  // Function to check SOL balance
-  const checkSolBalance = async (userPublicKey: PublicKey): Promise<{ hasEnough: boolean, balance: number }> => {
-    try {
-      console.log('Checking SOL balance for wallet:', userPublicKey.toString())
-      
-      // Get account balance in lamports
-      const lamports = await connection.getBalance(userPublicKey)
-      
-      // Convert to SOL
-      const solBalance = lamports / LAMPORTS_PER_SOL
-      console.log('SOL balance:', solBalance)
-      
-      return { 
-        hasEnough: solBalance >= REQUIRED_SOL_AMOUNT,
-        balance: solBalance
+  // Check SOL balance when wallet connects
+  useEffect(() => {
+    const checkBalance = async () => {
+      if (provider.publicKey) {
+        try {
+          console.log('Checking SOL balance for wallet:', provider.publicKey.toString())
+          const lamports = await connection.getBalance(provider.publicKey)
+          const balance = lamports / LAMPORTS_PER_SOL
+          console.log('SOL balance:', balance)
+          setSolBalance(balance)
+          setHasEnoughSol(balance >= REQUIRED_SOL_AMOUNT)
+        } catch (error) {
+          console.error('Error checking SOL balance:', error)
+          setSolBalance(0)
+          setHasEnoughSol(false)
+        }
       }
-    } catch (error) {
-      console.error('Error checking SOL balance:', error)
-      return { hasEnough: false, balance: 0 }
     }
-  }
+
+    checkBalance()
+  }, [provider.publicKey, connection])
 
   // Function to get hidden polls from localStorage
   const getHiddenPolls = () => {
@@ -114,86 +124,61 @@ export function useVotingProgram() {
     queryKey: ['voting', 'polls', { cluster }],
     queryFn: async () => {
       try {
+        console.log('Fetching polls...')
         const accounts = await program.account.poll.all()
         const hiddenPolls = getHiddenPolls()
-        
-        // Return all polls except hidden ones
-        return accounts.filter(account => 
-          !hiddenPolls.includes(account.account.pollId.toNumber())
-        )
+        return accounts.filter(account => !hiddenPolls.includes(account.account.pollId.toNumber()))
       } catch (error) {
         console.error('Error fetching polls:', error)
         return []
       }
     },
+    staleTime: Infinity, // Never consider the data stale
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch when component mounts
+    refetchOnReconnect: false, // Don't refetch when reconnecting
   })
+
+  // Function to manually refetch polls
+  const refetchPolls = () => {
+    console.log('Manually refetching polls...')
+    polls.refetch()
+  }
 
   // Initialize a new poll
   const initializePoll = useMutation({
     mutationKey: ['voting', 'initializePoll', { cluster }],
     mutationFn: async ({ pollId, description, pollStart, pollEnd }: { pollId: number, description: string, pollStart: number, pollEnd: number }) => {
-      // Generate a unique transaction ID
-      const txId = `${pollId}-${Date.now()}`
-      
-      // Check if this transaction was already processed
-      const processedTxs = JSON.parse(localStorage.getItem('processedTransactions') || '[]')
-      if (processedTxs.includes(txId)) {
-        throw new Error('Transaction already processed')
-      }
-
-      // Check if poll already exists
       const [pollPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(new BN(pollId).toArray('le', 8))],
         programId
       )
-      
-      try {
-        // Try to fetch the poll to check if it exists
-        await program.account.poll.fetch(pollPda)
-        throw new Error('Poll with this ID already exists')
-      } catch (error: any) {
-        // If error is not about account not found, rethrow it
-        if (!error.message?.includes('Account does not exist')) {
-          throw error
-        }
-      }
 
-      // @ts-ignore - bypass TypeScript errors for account naming discrepancies
-      const signature = await (program.methods as any)
+      return program.methods
         .initializePoll(
           new BN(pollId),
           description,
           new BN(pollStart),
           new BN(pollEnd)
         )
-        .accounts({ 
+        .accounts({
           signer: provider.publicKey,
           poll: pollPda,
-          systemProgram: new PublicKey("11111111111111111111111111111111")
-        })
+          systemProgram: anchor.web3.SystemProgram.programId
+        } as any)
         .rpc()
-
-      // Store the transaction ID
-      processedTxs.push(txId)
-      localStorage.setItem('processedTransactions', JSON.stringify(processedTxs))
-
-      return signature
     },
     onSuccess: (signature) => {
       transactionToast(signature)
       toast.success('Poll created successfully!')
-      return polls.refetch()
+      refetchPolls() // Manually refetch after creating a new poll
     },
     onError: (error: any) => {
       console.error('Error creating poll:', error)
-      if (error.message?.includes('already exists')) {
-        toast.error('A poll with this ID already exists')
-      } else if (error.message?.includes('already processed')) {
-        // Don't show error for already processed transactions
-        console.log('Transaction already processed, poll was created successfully')
-        return polls.refetch()
+      if (error.message?.includes('already in use')) {
+        toast.error('This poll ID is already taken. Please try a different ID.')
       } else {
-        toast.error('Failed to create poll: ' + (error.message || 'Unknown error'))
+        toast.error('Failed to create poll: ' + error.message)
       }
     },
   })
@@ -254,22 +239,22 @@ export function useVotingProgram() {
 
   // Vote for a candidate with SOL balance check
   const vote = useMutation({
-    mutationKey: ['voting', 'vote', { cluster }],
-    mutationFn: async ({ pollId, candidateName }: { pollId: number, candidateName: string }) => {
-      // Check SOL balance before allowing to vote
-      console.log('Checking SOL balance before voting...')
-      const { hasEnough, balance } = await checkSolBalance(provider.publicKey)
-      console.log('Has enough SOL:', hasEnough, 'Balance:', balance, 'Required:', REQUIRED_SOL_AMOUNT)
-      
-      if (!hasEnough) {
-        throw new Error(`Voting requires ${REQUIRED_SOL_AMOUNT} SOL. You have ${balance.toFixed(4)} SOL.`)
+    mutationKey: ['vote'],
+    mutationFn: async ({ pollId, candidateName }: { pollId: number; candidateName: string }) => {
+      if (!provider) throw new Error('Wallet not connected')
+      if (!hasEnoughSol) throw new Error('Insufficient SOL balance')
+
+      const transactionId = `${pollId}-${candidateName}-${provider.publicKey.toString()}`
+      const processedVotes = JSON.parse(localStorage.getItem('processedVotes') || '{}')
+      if (processedVotes[transactionId]) {
+        throw new Error('This vote has already been processed')
       }
 
       const [pollPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(new BN(pollId).toArray('le', 8))],
         programId
       )
-      
+
       const [candidatePda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from(new BN(pollId).toArray('le', 8)),
@@ -278,33 +263,51 @@ export function useVotingProgram() {
         programId
       )
 
-      if (!gatewayToken || gatewayToken.state !== 'ACTIVE') {
-        throw new Error('No valid Civic Pass found. Please verify your identity first.')
-      }
+      try {
+        const tx = await program.methods
+          .vote(candidateName, new BN(pollId))
+          .accounts({
+            signer: provider.publicKey,
+            poll: pollPda,
+            candidate: candidatePda,
+          } as any)
+          .rpc()
 
-      // @ts-ignore - bypass TypeScript errors for account naming discrepancies
-      return (program.methods as any)
-        .vote(
-          candidateName,
-          new BN(pollId)
-        )
-        .accounts({ 
-          signer: provider.publicKey,
-          poll: pollPda,
-          candidate: candidatePda,
-          gateway_token: gatewayToken.publicKey
+        // Wait for confirmation
+        const latestBlockHash = await connection.getLatestBlockhash()
+        await connection.confirmTransaction({
+          blockhash: latestBlockHash.blockhash,
+          lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+          signature: tx,
         })
-        .rpc()
+
+        // Only mark as processed after successful confirmation
+        processedVotes[transactionId] = true
+        localStorage.setItem('processedVotes', JSON.stringify(processedVotes))
+        
+        return tx
+      } catch (error: any) {
+        // Check if the error is due to the transaction being already processed
+        if (error.message?.includes('already been processed')) {
+          // If it's already processed, mark it as such and return success
+          processedVotes[transactionId] = true
+          localStorage.setItem('processedVotes', JSON.stringify(processedVotes))
+          return error.signature // Return the signature of the already processed transaction
+        }
+        throw error
+      }
     },
-    onSuccess: (signature) => {
-      transactionToast(signature)
+    onSuccess: (tx) => {
+      transactionToast(tx)
       toast.success('Vote cast successfully!')
       return polls.refetch()
     },
     onError: (error: any) => {
-      console.error('Vote error details:', error)
+      console.error('Vote error:', error)
       if (error.message?.includes('SOL')) {
         toast.error(error.message)
+      } else if (error.message?.includes('already been processed')) {
+        toast.error('This vote has already been processed')
       } else {
         toast.error('Failed to cast vote: ' + (error.message || 'Unknown error'))
       }
@@ -384,7 +387,8 @@ export function useVotingProgram() {
     deleteCandidate,
     vote,
     getPollCandidates,
-    checkSolBalance,
+    solBalance,
+    hasEnoughSol,
     REQUIRED_SOL_AMOUNT,
     unhidePoll,
     getHiddenPollsData,

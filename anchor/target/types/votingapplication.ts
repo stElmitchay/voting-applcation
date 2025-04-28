@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/votingapplication.json`.
  */
 export type Votingapplication = {
-  "address": "EFhNioWivWWzHP2iv2uV8hAT1DHr8C1PfsZ3C65PKPkh",
+  "address": "5zuwXytbwB9nDBvpcP8n235F2hBJSSPc561MB25kZboX",
   "metadata": {
     "name": "votingapplication",
     "version": "0.1.0",
@@ -144,6 +144,7 @@ export type Votingapplication = {
       "accounts": [
         {
           "name": "signer",
+          "writable": true,
           "signer": true
         },
         {
@@ -172,9 +173,6 @@ export type Votingapplication = {
               }
             ]
           }
-        },
-        {
-          "name": "gatewayToken"
         }
       ],
       "args": [
@@ -215,13 +213,6 @@ export type Votingapplication = {
         153,
         111
       ]
-    }
-  ],
-  "errors": [
-    {
-      "code": 6000,
-      "name": "invalidGatewayToken",
-      "msg": "Invalid gateway token"
     }
   ],
   "types": [

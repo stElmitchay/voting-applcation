@@ -11,7 +11,7 @@ import {
   WalletProvider,
 } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
-import { ReactNode, useCallback, useMemo } from 'react'
+import { ReactNode, useCallback, useMemo, useState, useEffect } from 'react'
 import { useCluster } from '../cluster/cluster-data-access'
 import { CustomWalletButton } from './wallet-button'
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
@@ -29,20 +29,59 @@ export const WalletButton = CustomWalletButton
 export function SolanaProvider({ children }: { children: ReactNode }) {
   const { cluster } = useCluster()
   const endpoint = useMemo(() => cluster.endpoint, [cluster])
-  const onError = useCallback((error: WalletError) => {
-    console.error(error)
+  const [autoConnect, setAutoConnect] = useState<boolean>(true)
+  const [retryCount, setRetryCount] = useState(0)
+
+  // Restore autoConnect state from localStorage
+  useEffect(() => {
+    const storedAutoConnect = localStorage.getItem('autoConnect')
+    if (storedAutoConnect === 'false') {
+      setAutoConnect(false)
+    }
   }, [])
 
-  // Add wallet adapters for persistence
-  const wallets = useMemo(() => [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-  ], []);
+  // Persist autoConnect state to localStorage
+  useEffect(() => {
+    localStorage.setItem('autoConnect', autoConnect.toString())
+  }, [autoConnect])
+
+  const onError = useCallback((error: WalletError) => {
+    console.error('Wallet error:', error)
+    
+    // Handle connection rejection specifically
+    if (error.name === 'WalletConnectionError' && retryCount < 3) {
+      console.log('Retrying connection...')
+      setRetryCount(prev => prev + 1)
+      // Add a small delay before retrying
+      setTimeout(() => {
+        setAutoConnect(true)
+      }, 1000)
+    } else if (retryCount >= 3) {
+      console.log('Max retries reached, disabling auto-connect')
+      setAutoConnect(false)
+      setRetryCount(0)
+    }
+  }, [retryCount])
+
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+    ],
+    []
+  )
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} onError={onError} autoConnect={true}>
-        <WalletModalProvider>{children}</WalletModalProvider>
+      <WalletProvider 
+        wallets={wallets} 
+        autoConnect={true}
+        localStorageKey="wallet-adapter"
+        onError={onError}
+      >
+        <WalletModalProvider>
+          {children}
+        </WalletModalProvider> 
       </WalletProvider>
     </ConnectionProvider>
   )

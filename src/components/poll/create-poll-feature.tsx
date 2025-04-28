@@ -111,10 +111,22 @@ export default function CreatePollFeature() {
 
       // Send the transaction
       const signature = await provider.sendAndConfirm(tx)
+      console.log('Transaction signature:', signature)
       
+      // Show success message
       toast.success('Poll and candidates created successfully!')
+      
+      // Wait a moment to ensure the transaction is processed
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Force a refetch of the polls
+      console.log('Fetching all polls after creation...')
+      const allPolls = await program.account.poll.all()
+      console.log('Polls after creation:', allPolls)
+      
+      // Redirect to voting page
       router.push('/voting')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating poll:', error)
       
       // Check for account already in use error
@@ -123,11 +135,14 @@ export default function CreatePollFeature() {
         // Generate a suggested new ID
         const suggestedId = pollDetails.pollId + Math.floor(Math.random() * 1000) + 1;
         setErrorMessage(`This poll ID (${pollDetails.pollId}) is already taken. Please go back and try using a different ID, such as ${suggestedId}.`);
+      } else if (errorMessage.includes('already been processed')) {
+        // If the transaction was already processed, consider it a success
+        toast.success('Poll and candidates created successfully!')
+        router.push('/voting')
       } else {
         setErrorMessage(`Failed to create poll: ${errorMessage}`);
+        toast.error(`Failed to create poll: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`);
       }
-      
-      toast.error(`Failed to create poll: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`);
     } finally {
       setIsSubmitting(false)
     }
