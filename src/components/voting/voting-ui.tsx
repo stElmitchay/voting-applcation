@@ -15,6 +15,7 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
   const [description, setDescription] = useState('')
   const [pollStart, setPollStart] = useState('')
   const [pollEnd, setPollEnd] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -57,6 +58,7 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
       description,
       pollStart: startTimestamp,
       pollEnd: endTimestamp,
+      imageUrl: imageUrl.trim() || undefined,
     }
 
     try {
@@ -72,6 +74,7 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
         setDescription('')
         setPollStart('')
         setPollEnd('')
+        setImageUrl('')
       }
     } catch (error: any) {
       console.error('Error creating poll:', error)
@@ -123,6 +126,16 @@ export function CreatePollForm({ onPollCreated }: { onPollCreated?: (details: an
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-[#F5F5DC]">Image URL (optional)</label>
+        <input
+          type="url"
+          placeholder="https://example.com/image.jpg"
+          className="w-full px-4 py-2.5 bg-[#2c5446] border border-[#2c5446] rounded-lg text-[#F5F5DC] text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:border-transparent placeholder-[#F5F5DC]/50"
+          value={imageUrl}
+          onChange={e => setImageUrl(e.target.value)}
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -580,127 +593,179 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false, defaultE
   // Prevent card click from toggling when clicking on action buttons
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()
 
-  return (
-    <div className="bg-[#3a6b5a] rounded-lg border border-[#F5F5DC]/20 overflow-hidden cursor-pointer transition-shadow hover:shadow-lg"
-      onClick={() => setIsExpanded(v => !v)}>
-      <div className="p-4">
-        <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-medium text-[#F5F5DC]">Poll #{poll.pollId.toString()}</h3>
-            <p className="text-sm text-[#F5F5DC]/80 mt-1">{poll.description}</p>
-            <div className="flex items-center mt-2 text-xs text-[#F5F5DC]/60">
-              <span>Start: {formatDate(poll.pollStart.toNumber())}</span>
-              <span className="mx-2">•</span>
-              <span>End: {formatDate(poll.pollEnd.toNumber())}</span>
-            </div>
-            <div className="mt-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#2c5446] text-[#A3E4D7]">
-                {getTimeRemaining(poll.pollStart.toNumber(), poll.pollEnd.toNumber())}
-              </span>
-            </div>
-            {/* Candidate summary always visible */}
-            <div className="mt-2 text-sm text-[#A3E4D7] font-semibold truncate">
-              {candidateSummary}
-            </div>
-          </div>
-          <div className="flex flex-col space-y-2 ml-4">
-            {isAdmin && (
-              <>
-                <button
-                  onClick={e => { stopPropagation(e); handleToggleActive(); }}
-                  className={`p-1 rounded-full ${
-                    isActive ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
-                  }`}
-                  title={isActive ? 'Deactivate Poll' : 'Activate Poll'}
-                >
-                  {isActive ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                </button>
-                <button
-                  onClick={e => { stopPropagation(e); handleDeletePoll(); }}
-                  className="p-1 rounded-full bg-red-900/30 text-red-400 hover:bg-red-900/50"
-                  title="Delete Poll"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </>
-            )}
-            <button
-              onClick={e => { stopPropagation(e); handleShare(); }}
-              className={`p-1 rounded-full ${isCopied ? 'bg-green-900/30 text-green-400' : 'bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80'}`}
-              title="Share Poll"
-            >
-              {isCopied ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <rect x="9" y="9" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
-                  <rect x="3" y="3" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
-                </svg>
-              )}
-            </button>
-            <button
-              onClick={e => { stopPropagation(e); handleToggleExpand(); }}
-              className="p-1 rounded-full bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80"
-            >
-              {isExpanded ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-        {isExpanded && (
-          <div className="mt-4 border-t border-[#2c5446] pt-4">
-            <div className="mb-3">
-              <h4 className="text-sm font-medium text-[#F5F5DC] mb-2">Poll Details</h4>
-              <p className="text-xs text-[#F5F5DC]/70 mb-1">
-                <span className="font-medium">Address:</span>{' '}
-                <ExplorerLink path={`account/${publicKey}`} label={ellipsify(publicKey.toString())} />
-              </p>
-              <p className="text-xs text-[#F5F5DC]/70">
-                <span className="font-medium">Candidates:</span> {poll.candidateAmount.toString()}
-              </p>
-            </div>
+  // Default image for all polls
+  const defaultImage = 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80'
 
-            {isLoading ? (
-              <div className="flex justify-center my-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A3E4D7]"></div>
+  return (
+    <div
+      className={`rounded-xl shadow-lg overflow-hidden border border-[#F5F5DC]/20 mb-2 ${isExpanded ? '' : 'cursor-pointer hover:shadow-2xl transition-shadow'}`}
+      onClick={() => !isExpanded && setIsExpanded(true)}
+      style={!isExpanded ? {
+        backgroundImage: `url(${defaultImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'relative',
+        minHeight: 180,
+        color: 'white',
+      } : {}}
+    >
+      {!isExpanded && (
+        <>
+          {/* Overlay */}
+          <div style={{position: 'absolute', inset: 0, background: 'rgba(44, 84, 70, 0.65)', zIndex: 1}} />
+          {/* Content */}
+          <div className="relative z-10 flex flex-col justify-between h-full" style={{minHeight: 180}}>
+            <div className="p-4">
+              <h3 className="text-lg font-bold drop-shadow">{poll.description || 'Untitled Poll'}</h3>
+              <div className="text-sm opacity-80 drop-shadow">{poll.subtitle || 'Nationwide'}</div>
+            </div>
+            <div className="flex items-center justify-between px-4 py-4" style={{background: '#7ed6c1', borderBottomLeftRadius: 12, borderBottomRightRadius: 12}}>
+              <div className="flex items-center gap-2 text-xs text-[#2c5446]">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Voting closes in {getTimeRemaining(poll.pollStart.toNumber(), poll.pollEnd.toNumber()).replace('Poll ending in ', '')}
               </div>
-            ) : candidates.length > 0 ? (
-              <>
-                <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={() => {}} />
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-[#F5F5DC]/70">No candidates found for this poll.</p>
-                {!isActive && (
-                  <p className="text-sm text-red-400 mt-2">
-                    Cannot add candidates after poll has ended.
+              <div className="flex items-center gap-2 text-xs text-[#2c5446]">
+                <svg className="w-4 h-4 mr-1" fill="#2c5446" stroke="#2c5446" viewBox="0 0 24 24" ><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h1v10a1 1 0 001 1h14a1 1 0 001-1V10h1" /></svg>
+                {candidates.reduce((sum, c) => sum + Number(c.account.candidateVotes), 0).toLocaleString()} votes
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      {isExpanded && (
+        <div
+          className="bg-[#3a6b5a] relative"
+          style={{
+            backgroundImage: `url(${defaultImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            minHeight: 180,
+          }}
+        >
+          {/* Green overlay for readability */}
+          <div style={{position: 'absolute', inset: 0, background: 'rgba(44, 84, 70, 0.75)', zIndex: 1}} />
+          {/* Expanded content on top of image/overlay */}
+          <div className="relative z-10">
+            <div className="p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-medium text-[#F5F5DC]">Poll #{poll.pollId.toString()}</h3>
+                  <p className="text-sm text-[#F5F5DC]/80 mt-1">{poll.description}</p>
+                  <div className="flex items-center mt-2 text-xs text-[#F5F5DC]/60">
+                    <span>Start: {formatDate(poll.pollStart.toNumber())}</span>
+                    <span className="mx-2">•</span>
+                    <span>End: {formatDate(poll.pollEnd.toNumber())}</span>
+                  </div>
+                  <div className="mt-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#2c5446] text-[#A3E4D7]">
+                      {getTimeRemaining(poll.pollStart.toNumber(), poll.pollEnd.toNumber())}
+                    </span>
+                  </div>
+                  {/* Candidate summary always visible */}
+                  <div className="mt-2 text-sm text-[#A3E4D7] font-semibold truncate">
+                    {candidateSummary}
+                  </div>
+                </div>
+                <div className="flex flex-col space-y-2 ml-4">
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={e => { stopPropagation(e); handleToggleActive(); }}
+                        className={`p-1 rounded-full ${
+                          isActive ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
+                        }`}
+                        title={isActive ? 'Deactivate Poll' : 'Activate Poll'}
+                      >
+                        {isActive ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={e => { stopPropagation(e); handleDeletePoll(); }}
+                        className="p-1 rounded-full bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                        title="Delete Poll"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={e => { stopPropagation(e); handleShare(); }}
+                    className={`p-1 rounded-full ${isCopied ? 'bg-green-900/30 text-green-400' : 'bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80'}`}
+                    title="Share Poll"
+                  >
+                    {isCopied ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <rect x="9" y="9" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
+                        <rect x="3" y="3" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    onClick={e => { stopPropagation(e); handleToggleExpand(); }}
+                    className="p-1 rounded-full bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80"
+                  >
+                    {isExpanded ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              {/* VotingSection and horizontal line */}
+              <div className="mt-4 pt-4">
+                <div className="mb-3">
+                  <h4 className="text-sm font-medium text-[#F5F5DC] mb-2">Poll Details</h4>
+                  <p className="text-xs text-[#F5F5DC]/70 mb-1">
+                    <span className="font-medium">Address:</span>{' '}
+                    <ExplorerLink path={`account/${publicKey}`} label={ellipsify(publicKey.toString())} />
                   </p>
+                  <p className="text-xs text-[#F5F5DC]/70">
+                    <span className="font-medium">Candidates:</span> {poll.candidateAmount.toString()}
+                  </p>
+                </div>
+
+                {isLoading ? (
+                  <div className="flex justify-center my-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A3E4D7]"></div>
+                  </div>
+                ) : candidates.length > 0 ? (
+                  <>
+                    <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={() => {}} />
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-[#F5F5DC]/70">No candidates found for this poll.</p>
+                    {!isActive && (
+                      <p className="text-sm text-red-400 mt-2">
+                        Cannot add candidates after poll has ended.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
