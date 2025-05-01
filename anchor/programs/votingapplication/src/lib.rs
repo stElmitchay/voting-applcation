@@ -62,6 +62,8 @@ pub struct Vote <'info>{
     bump
   )]
   pub candidate: Account<'info, Candidate>,
+
+  pub system_program: Program<'info, System>,
 }
 
 

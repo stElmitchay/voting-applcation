@@ -144,7 +144,6 @@ export type Votingapplication = {
       "accounts": [
         {
           "name": "signer",
-          "writable": true,
           "signer": true
         },
         {
@@ -173,6 +172,10 @@ export type Votingapplication = {
               }
             ]
           }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [

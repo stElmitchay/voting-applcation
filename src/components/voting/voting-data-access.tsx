@@ -263,39 +263,15 @@ export function useVotingProgram() {
         programId
       )
 
-      try {
-        const tx = await program.methods
-          .vote(candidateName, new BN(pollId))
-          .accounts({
-            signer: provider.publicKey,
-            poll: pollPda,
-            candidate: candidatePda,
-          } as any)
-          .rpc()
-
-        // Wait for confirmation
-        const latestBlockHash = await connection.getLatestBlockhash()
-        await connection.confirmTransaction({
-          blockhash: latestBlockHash.blockhash,
-          lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-          signature: tx,
+      return program.methods
+        .vote(candidateName, new BN(pollId))
+        .accounts({
+          signer: provider.publicKey,
+          poll: pollPda,
+          candidate: candidatePda,
+          systemProgram: SystemProgram.programId
         })
-
-        // Only mark as processed after successful confirmation
-        processedVotes[transactionId] = true
-        localStorage.setItem('processedVotes', JSON.stringify(processedVotes))
-        
-        return tx
-      } catch (error: any) {
-        // Check if the error is due to the transaction being already processed
-        if (error.message?.includes('already been processed')) {
-          // If it's already processed, mark it as such and return success
-          processedVotes[transactionId] = true
-          localStorage.setItem('processedVotes', JSON.stringify(processedVotes))
-          return error.signature // Return the signature of the already processed transaction
-        }
-        throw error
-      }
+        .rpc()
     },
     onSuccess: (tx) => {
       transactionToast(tx)
