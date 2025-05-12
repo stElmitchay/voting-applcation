@@ -238,59 +238,35 @@ export function useVotingProgram() {
   })
 
   // Vote for a candidate with SOL balance check
-  const vote = useMutation({
-    mutationKey: ['vote'],
-    mutationFn: async ({ pollId, candidateName }: { pollId: number; candidateName: string }) => {
-      if (!provider) throw new Error('Wallet not connected')
-      if (!hasEnoughSol) throw new Error('Insufficient SOL balance')
+  const vote = async ({ pollId, candidateName }: { pollId: number; candidateName: string }) => {
+    if (!provider) throw new Error('Wallet not connected')
+    if (!hasEnoughSol) throw new Error('Insufficient SOL balance')
 
-      const transactionId = `${pollId}-${candidateName}-${provider.publicKey.toString()}`
-      const processedVotes = JSON.parse(localStorage.getItem('processedVotes') || '{}')
-      if (processedVotes[transactionId]) {
-        throw new Error('This vote has already been processed')
-      }
+    const [pollPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(new BN(pollId).toArray('le', 8))],
+      programId
+    )
 
-      const [pollPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from(new BN(pollId).toArray('le', 8))],
-        programId
-      )
+    const [candidatePda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from(new BN(pollId).toArray('le', 8)),
+        Buffer.from(candidateName)
+      ],
+      programId
+    )
 
-      const [candidatePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from(new BN(pollId).toArray('le', 8)),
-          Buffer.from(candidateName)
-        ],
-        programId
-      )
+    return await program.methods
+      .vote(candidateName, new BN(pollId))
+      .accounts({
+        signer: provider.publicKey,
+        poll: pollPda,
+        candidate: candidatePda,
+        systemProgram: SystemProgram.programId
+      } as any)
+      .rpc()
+  }
 
-      return program.methods
-        .vote(candidateName, new BN(pollId))
-        .accounts({
-          signer: provider.publicKey,
-          poll: pollPda,
-          candidate: candidatePda,
-          systemProgram: SystemProgram.programId
-        })
-        .rpc()
-    },
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      toast.success('Vote cast successfully!')
-      return polls.refetch()
-    },
-    onError: (error: any) => {
-      console.error('Vote error:', error)
-      if (error.message?.includes('SOL')) {
-        toast.error(error.message)
-      } else if (error.message?.includes('already been processed')) {
-        toast.error('This vote has already been processed')
-      } else {
-        toast.error('Failed to cast vote: ' + (error.message || 'Unknown error'))
-      }
-    },
-  })
-
-  // Get candidates for a specific poll
+  // Function to get candidates for a specific poll
   const getPollCandidates = async (pollId: number) => {
     try {
       const accounts = await program.account.candidate.all()
@@ -310,43 +286,6 @@ export function useVotingProgram() {
     }
   }
 
-  const deleteCandidate = useMutation({
-    mutationKey: ['voting', 'deleteCandidate', { cluster }],
-    mutationFn: async ({ pollId, candidateName }: { pollId: number, candidateName: string }) => {
-      const [pollPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from(new BN(pollId).toArray('le', 8))],
-        programId
-      )
-      
-      const [candidatePda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from(new BN(pollId).toArray('le', 8)),
-          Buffer.from(candidateName)
-        ],
-        programId
-      )
-
-      // @ts-ignore - bypass TypeScript errors for account naming discrepancies
-      return (program.methods as any)
-        .deleteCandidate(candidateName, new BN(pollId))
-        .accounts({ 
-          signer: provider.publicKey,
-          poll: pollPda,
-          candidate: candidatePda
-        })
-        .rpc()
-    },
-    onSuccess: (signature) => {
-      transactionToast(signature)
-      toast.success('Candidate deleted successfully!')
-      return polls.refetch()
-    },
-    onError: (error) => {
-      console.error(error)
-      toast.error('Failed to delete candidate')
-    },
-  })
-
   // Function to check if the current user is an admin (the creator of the poll)
   const isUserAdmin = (pollCreator: PublicKey | null) => {
     if (!provider.publicKey || !pollCreator) return false
@@ -360,7 +299,6 @@ export function useVotingProgram() {
     initializePoll,
     hidePoll,
     initializeCandidate,
-    deleteCandidate,
     vote,
     getPollCandidates,
     solBalance,

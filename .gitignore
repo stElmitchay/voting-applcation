@@ -39,3 +39,4 @@ tmp
 # Logs and RocksDB options
 test-ledger
 
+.cursor
