@@ -1,9 +1,6 @@
+# 🗳️ utopia
 
-# 🗳️ Solana Voting Application
-
-A simple and extensible on-chain voting application built on the [Solana](https://solana.com/) blockchain using the [Anchor](https://book.anchor-lang.com/) framework. This open-source project allows users to create polls, add candidates, vote, and view results—entirely on-chain.
-
- **Note:**  🧱 This project extends the **original voting app built during the Solana Foundation Developer Bootcamp 2024**. Watch the bootcamp session [here](https://youtu.be/amAq-WHAFs8?si=gCsQf4M7dSL66uw3) and explore the original repo [here](https://github.com/solana-developers/developer-bootcamp-2024).
+Utopia is a no-code, decentralized voting platform built on the Solana blockchain that solves the widespread distrust, complexity, and high cost of traditional voting systems. In a country like Sierra Leone—where even student elections or reality show votes can trigger conflict—Utopia empowers universities, organizations, and event managers to launch transparent, tamper-proof elections without technical barriers. With features like self-serve poll creation, configurable voting rules, pay-to-vote options, and real-time on-chain results, Utopia makes every vote count—instantly, anonymously, and verifiably. More than just a product, it’s a movement toward restoring trust in democratic processes.
 
 
 ## 🚀 Features
@@ -14,6 +11,7 @@ A simple and extensible on-chain voting application built on the [Solana](https:
 - View Results: See live vote counts for each candidate in a poll.
 - Built with Anchor v0.30.1
 - Frontend powered by React & TypeScript
+- Authentication with Privy: Email, social login and wallet connections
 
 ## 🛠️ Prerequisites
 
@@ -34,6 +32,18 @@ cd voting-applcation
 npm install
 ```
 
+## 🔐 Privy Authentication Setup
+
+1. Create a `.env.local` file in the root directory with the following variables:
+
+```
+NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
+NEXT_PUBLIC_SOLANA_ENDPOINT=https://api.devnet.solana.com
+```
+
+2. Sign up for a Privy account at [privy.io](https://privy.io) and obtain your app ID
+3. Replace `your_privy_app_id` with your actual Privy App ID
+
 ## 🧪 Run Locally
 
 ### Build and Deploy to Devnet
@@ -47,8 +57,6 @@ anchor deploy --provider.cluster devnet
 cd src
 npm run dev
 ```
-
-
 
 ## 📋 Solana Program Overview
 
@@ -74,9 +82,21 @@ This project is modular and customizable:
 - Extend the Solana program with new instructions (e.g., private voting, rewards).
 - Integrate DAO tooling, Discord bots, analytics dashboards, or token-based gating.
 
+## 🔒 Authentication with Privy
+
+This project uses Privy for authentication, providing:
+
+- Email-based login with automatic wallet creation
+- Social authentication (Google, Twitter, Discord)
+- Traditional wallet connection support (Phantom, Solflare)
+- Session management and persistence
+- Secure user management
+
+For more information, see the [Privy documentation](https://docs.privy.io/).
+
 ## 🤝 Contributing
 
-Pull requests and forks are welcome! Open an issue if you’d like to propose changes, improvements, or report a bug.
+Pull requests and forks are welcome! Open an issue if you'd like to propose changes, improvements, or report a bug.
 
 ## 📄 License
 
