@@ -66,7 +66,6 @@ pub struct Vote <'info>{
   pub system_program: Program<'info, System>,
 }
 
-
 #[derive(Accounts)]
 #[instruction(candidate_name:String, poll_id:u64)] //the order matters
 pub struct  InitializeCandidate<'info>{
@@ -80,51 +79,35 @@ pub struct  InitializeCandidate<'info>{
     bump
   )]
 
-pub poll: Account<'info, Poll>,
+  pub poll: Account<'info, Poll>,
   #[account(
     init,
     payer = signer,
     space = 8 + Candidate::INIT_SPACE,
     seeds = [poll_id.to_le_bytes().as_ref(), candidate_name.as_bytes()],
     bump
-  )]
+            )]
   pub candidate: Account<'info, Candidate>,
   pub system_program: Program<'info, System>,
 }
 
-  #[account]
-  #[derive(InitSpace)]
-  pub struct Candidate{
-    #[max_len(64)]
-    pub candidate_name: String,
-    pub candidate_votes: u64,
-  }
-
-//defines the accounts needed for the InitializePoll instruction
 #[derive(Accounts)]
 #[instruction(poll_id:u64)]
 pub struct InitializePoll<'info>{
-  //the user who's paying for and signiong the transaction
   #[account(mut)]
   pub signer: Signer<'info>,
-
-   // The account that will store all poll data
-    // This account will be created when this instruction runs
   #[account(
     init,
     payer = signer,
     space = 8 + Poll::INIT_SPACE,
     seeds = [poll_id.to_le_bytes().as_ref()],
     bump
-
-
-  )]
+            )]
   pub poll: Account<'info, Poll>,
-
   pub system_program: Program<'info, System>
 }
 
-//define the structure of our Poll account's data
+
 #[account]
 #[derive(InitSpace)]
 pub struct Poll{
@@ -135,3 +118,10 @@ pub struct Poll{
   pub poll_end:u64,
   pub candidate_amount: u64,
 }
+#[account]
+#[derive(InitSpace)]
+pub struct Candidate{
+    #[max_len(64)]
+    pub candidate_name: String,
+    pub candidate_votes: u64,
+  }
