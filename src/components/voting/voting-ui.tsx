@@ -1,7 +1,7 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PublicKey } from '@solana/web3.js'
 import { useVotingProgram } from './voting-data-access'
 import { ExplorerLink } from '../cluster/cluster-ui'
@@ -260,31 +260,44 @@ export function VotingSection({
   const { vote, REQUIRED_SOL_AMOUNT, solBalance, hasEnoughSol } = useVotingProgram()
   const { publicKey } = useWallet()
   const [voteError, setVoteError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [votingFor, setVotingFor] = useState<string | null>(null)
 
   const handleVote = async (candidateName: string) => {
+    if (!publicKey) {
+      toast.error('Please connect your wallet to vote')
+      return
+    }
+
+    // Prevent duplicate votes while transaction is pending
+    if (votingFor) {
+      toast.error('Please wait for your previous vote to complete')
+      return
+    }
+
+    setVotingFor(candidateName)
     setVoteError(null)
-    setIsLoading(true)
+
     try {
-      const tx = await vote({ pollId, candidateName })
-      toast.success('Vote cast successfully!')
-      if (onUpdate) setTimeout(() => onUpdate(), 1000)
+      await vote.mutateAsync({
+        pollId,
+        candidateName,
+      })
+
+      // Store the transaction ID locally to prevent duplicate submissions
+      const transactionId = `${pollId}-${candidateName}-${publicKey.toString()}`
+      const processedVotes = JSON.parse(localStorage.getItem('processedVotes') || '{}')
+      processedVotes[transactionId] = Date.now()
+      localStorage.setItem('processedVotes', JSON.stringify(processedVotes))
+
+      if (onUpdate) onUpdate()
     } catch (error: any) {
       console.error('Vote error:', error)
-      if (error.message?.includes('SOL')) {
-        toast.error(error.message)
-      } else if (
-        (error.message?.includes('already been processed')) ||
-        (error.transactionMessage?.includes('already been processed')) ||
-        (error.toString().includes('already been processed'))
-      ) {
-        toast.success('Vote cast successfully!')
-        if (onUpdate) setTimeout(() => onUpdate(), 1000)
-      } else {
-        toast.error('Failed to cast vote: ' + (error.message || 'Unknown error'))
-      }
+      const errorMessage = error.message || 'Failed to cast vote'
+      console.error(`Vote error: ${errorMessage}`)
+      setVoteError(errorMessage)
+      toast.error(`Voting failed: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`)
     } finally {
-      setIsLoading(false)
+      setVotingFor(null)
     }
   }
 
@@ -341,7 +354,8 @@ export function VotingSection({
             ? Math.round((voteCount / totalVotes) * 100)
             : 0
 
-          const canVote = isActive && publicKey && (solBalance !== null && hasEnoughSol)
+          const canVote = isActive && publicKey && (!voteError) && (solBalance !== null && hasEnoughSol)
+          const isVoting = votingFor === candidateName
 
           return (
             <div key={index} className="border border-[#2c5446] rounded-lg p-4">
@@ -352,7 +366,7 @@ export function VotingSection({
                     <button
                       onClick={() => handleVote(candidateName)}
                       className="px-4 py-2 bg-white text-[#0A1A14] text-sm font-medium rounded-lg hover:bg-[#A3E4D7] hover:text-[#0A1A14] transition-colors focus:outline-none focus:ring-2 focus:ring-[#A3E4D7] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!canVote || isLoading}
+                      disabled={!canVote || vote.isPending || isVoting}
                       title={!publicKey
                         ? 'Connect your wallet to vote'
                         : !isActive
@@ -361,7 +375,7 @@ export function VotingSection({
                         ? 'Voting failed'
                         : ''}
                     >
-                      {isLoading ? (
+                      {isVoting ? (
                         <div className="flex items-center justify-center">
                           <div className="animate-spin h-4 w-4 mr-2 border-b-2 border-[#0A1A14] rounded-full"></div>
                           <span>Voting...</span>
@@ -427,26 +441,34 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false, defaultE
     setIsActive(now >= startTime && now <= endTime)
   }, [poll.pollStart, poll.pollEnd])
 
-  const fetchCandidates = async () => {
-    setIsLoading(true)
-    try {
-      const candidatesData = await getPollCandidates(poll.pollId.toNumber())
-      setCandidates(candidatesData)
-    } catch (error) {
-      console.error('Error loading candidates:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+  // Load candidates when expanded
   useEffect(() => {
+    const loadCandidates = async () => {
+      setIsLoading(true)
+      try {
+        const candidatesData = await getPollCandidates(poll.pollId.toNumber())
+        setCandidates(candidatesData)
+      } catch (error) {
+        console.error('Error loading candidates:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
     if (isExpanded) {
-      fetchCandidates()
+      loadCandidates()
     }
   }, [isExpanded, poll.pollId])
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded)
+  }
+
+  const handleDeletePoll = () => {
+    // This would require a new function in the Anchor program
+    // For now, we'll just hide the poll locally
+    hidePoll(poll.pollId.toNumber())
+    onUpdate()
   }
 
   const handleToggleActive = () => {
@@ -613,34 +635,13 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false, defaultE
                         )}
                       </button>
                       <button
-                        onClick={e => { stopPropagation(e); handleShare(); }}
-                        className={`p-1 rounded-full ${isCopied ? 'bg-green-900/30 text-green-400' : 'bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80'}`}
-                        title="Share Poll"
+                        onClick={e => { stopPropagation(e); handleDeletePoll(); }}
+                        className="p-1 rounded-full bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                        title="Delete Poll"
                       >
-                        {isCopied ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <rect x="9" y="9" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
-                            <rect x="3" y="3" width="13" height="13" rx="2" fill="currentColor" stroke="green" strokeWidth="2" />
-                          </svg>
-                        )}
-                      </button>
-                      <button
-                        onClick={e => { stopPropagation(e); handleToggleExpand(); }}
-                        className="p-1 rounded-full bg-[#2c5446] text-[#F5F5DC] hover:bg-[#2c5446]/80"
-                      >
-                        {isExpanded ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        )}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                       </button>
                     </>
                   )}
@@ -695,7 +696,7 @@ export function PollCard({ poll, publicKey, onUpdate, isHidden = false, defaultE
                   </div>
                 ) : candidates.length > 0 ? (
                   <>
-                    <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={fetchCandidates} />
+                    <VotingSection pollId={poll.pollId.toNumber()} candidates={candidates} isActive={isActive} onUpdate={() => {}} />
                   </>
                 ) : (
                   <div className="text-center py-4">

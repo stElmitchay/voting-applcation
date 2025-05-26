@@ -238,35 +238,59 @@ export function useVotingProgram() {
   })
 
   // Vote for a candidate with SOL balance check
-  const vote = async ({ pollId, candidateName }: { pollId: number; candidateName: string }) => {
-    if (!provider) throw new Error('Wallet not connected')
-    if (!hasEnoughSol) throw new Error('Insufficient SOL balance')
+  const vote = useMutation({
+    mutationKey: ['vote'],
+    mutationFn: async ({ pollId, candidateName }: { pollId: number; candidateName: string }) => {
+      if (!provider) throw new Error('Wallet not connected')
+      if (!hasEnoughSol) throw new Error('Insufficient SOL balance')
 
-    const [pollPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(new BN(pollId).toArray('le', 8))],
-      programId
-    )
+      const transactionId = `${pollId}-${candidateName}-${provider.publicKey.toString()}`
+      const processedVotes = JSON.parse(localStorage.getItem('processedVotes') || '{}')
+      if (processedVotes[transactionId]) {
+        throw new Error('This vote has already been processed')
+      }
 
-    const [candidatePda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(new BN(pollId).toArray('le', 8)),
-        Buffer.from(candidateName)
-      ],
-      programId
-    )
+      const [pollPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from(new BN(pollId).toArray('le', 8))],
+        programId
+      )
 
-    return await program.methods
-      .vote(candidateName, new BN(pollId))
-      .accounts({
-        signer: provider.publicKey,
-        poll: pollPda,
-        candidate: candidatePda,
-        systemProgram: SystemProgram.programId
-      } as any)
-      .rpc()
-  }
+      const [candidatePda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from(new BN(pollId).toArray('le', 8)),
+          Buffer.from(candidateName)
+        ],
+        programId
+      )
 
-  // Function to get candidates for a specific poll
+      return program.methods
+        .vote(candidateName, new BN(pollId))
+        .accounts({
+          signer: provider.publicKey,
+          poll: pollPda,
+          candidate: candidatePda,
+          systemProgram: SystemProgram.programId
+        })
+        .rpc()
+    },
+    onSuccess: (tx) => {
+      transactionToast(tx)
+      toast.success('Vote cast successfully!')
+      return polls.refetch()
+    },
+    onError: (error: any) => {
+      console.error('Vote error:', error)
+      if (error.message?.includes('SOL')) {
+        toast.error(error.message)
+      } else if (error.message?.includes('already been processed')) {
+        toast.error('This vote has already been processed')
+      } else {
+        toast.error('Failed to cast vote: ' + (error.message || 'Unknown error'))
+      }
+    },
+  })
+
+  // Get candidates for a specific poll
   const getPollCandidates = async (pollId: number) => {
     try {
       const accounts = await program.account.candidate.all()

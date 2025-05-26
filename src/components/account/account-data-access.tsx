@@ -14,6 +14,9 @@ import {
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import {useTransactionToast} from '../ui/ui-layout'
+import { BN } from '@coral-xyz/anchor'
+import * as spl from '@solana/spl-token'
+import { useAnchorProvider } from '../solana/solana-provider'
 
 export function useGetBalance({ address }: { address: PublicKey }) {
   const { connection } = useConnection()
@@ -172,5 +175,27 @@ async function createTransaction({
   return {
     transaction,
     latestBlockhash,
+  }
+}
+
+export function useAnchorAccount() {
+  const provider = useAnchorProvider()
+  const { publicKey, sendTransaction } = useWallet()
+
+  if (!provider || !publicKey) {
+    return {
+      loading: false,
+      error: new Error('Wallet not connected'),
+      publicKey: null,
+      sendTransaction: async () => {
+        throw new Error('Wallet not connected')
+      }
+    }
+  }
+
+  return {
+    loading: false,
+    publicKey,
+    sendTransaction: provider.sendAndConfirm,
   }
 }

@@ -27,13 +27,21 @@ export function ClusterChecker({ children }: { children: ReactNode }) {
   const { connection } = useConnection()
 
   const query = useQuery({
-    queryKey: ['version', { cluster, endpoint: connection.rpcEndpoint }],
-    queryFn: () => connection.getVersion(),
+    queryKey: ['version', { cluster, endpoint: connection?.rpcEndpoint }],
+    queryFn: () => {
+      if (!connection) {
+        throw new Error('Connection not available')
+      }
+      return connection.getVersion()
+    },
     retry: 1,
+    enabled: !!connection,
   })
-  if (query.isLoading) {
+  
+  if (query.isLoading || !connection) {
     return null
   }
+  
   if (query.isError || !query.data) {
     return (
       <div className="alert alert-warning text-warning-content/80 rounded-none flex justify-center">
@@ -46,6 +54,7 @@ export function ClusterChecker({ children }: { children: ReactNode }) {
       </div>
     )
   }
+  
   return children
 }
 

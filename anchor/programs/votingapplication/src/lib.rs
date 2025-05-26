@@ -125,3 +125,10 @@ pub struct Candidate{
     pub candidate_name: String,
     pub candidate_votes: u64,
   }
+
+  #pub const INIT_SPACE: usize = 8 + 280 + 8 + 8 + 8;
+  pub struct test{
+
+    #[max_len(64)]
+    pub example: String,
+  }
