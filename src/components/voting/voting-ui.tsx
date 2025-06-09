@@ -274,6 +274,17 @@ export function VotingSection({
       return
     }
 
+    // Check for recent transactions in localStorage before attempting to vote
+    const transactionId = `${pollId}-${candidateName}-${publicKey.toString()}`
+    const processedVotes = JSON.parse(localStorage.getItem('processedVotes') || '{}')
+    const recentVoteTime = processedVotes[transactionId]
+    
+    // If there's a recent vote (within the last 5 minutes), prevent duplicate
+    if (recentVoteTime && (Date.now() - recentVoteTime) < 5 * 60 * 1000) {
+      toast.error('You have already voted for this candidate recently')
+      return
+    }
+
     setVotingFor(candidateName)
     setVoteError(null)
 
@@ -284,7 +295,6 @@ export function VotingSection({
       })
 
       // Store the transaction ID locally to prevent duplicate submissions
-      const transactionId = `${pollId}-${candidateName}-${publicKey.toString()}`
       const processedVotes = JSON.parse(localStorage.getItem('processedVotes') || '{}')
       processedVotes[transactionId] = Date.now()
       localStorage.setItem('processedVotes', JSON.stringify(processedVotes))
@@ -293,9 +303,23 @@ export function VotingSection({
     } catch (error: any) {
       console.error('Vote error:', error)
       const errorMessage = error.message || 'Failed to cast vote'
-      console.error(`Vote error: ${errorMessage}`)
-      setVoteError(errorMessage)
-      toast.error(`Voting failed: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`)
+      
+      // Handle specific error cases
+      if (errorMessage.includes('already been processed') || errorMessage.includes('This transaction has already been processed')) {
+        // If the transaction was already processed, treat it as a success
+        toast.success('Vote was successfully processed!')
+        
+        // Store the transaction to prevent future duplicates
+        const processedVotes = JSON.parse(localStorage.getItem('processedVotes') || '{}')
+        processedVotes[transactionId] = Date.now()
+        localStorage.setItem('processedVotes', JSON.stringify(processedVotes))
+        
+        if (onUpdate) onUpdate()
+      } else {
+        console.error(`Vote error: ${errorMessage}`)
+        setVoteError(errorMessage)
+        toast.error(`Voting failed: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`)
+      }
     } finally {
       setVotingFor(null)
     }
